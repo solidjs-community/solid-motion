@@ -54,11 +54,7 @@ export const PerTargetOverride: Story = {
 /** Keyframe arrays: `x` steps through every value in the array, evenly spaced across `duration`. */
 export const KeyframeArray: Story = {
 	render: () => (
-		<Motion.div
-			style={box}
-			animate={{x: [0, 150, 0, 80, 0]}}
-			transition={{duration: 2}}
-		/>
+		<Motion.div style={box} animate={{x: [0, 150, 0, 80, 0]}} transition={{duration: 2}} />
 	),
 }
 

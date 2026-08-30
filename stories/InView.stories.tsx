@@ -27,7 +27,9 @@ export const ScrollTrigger: Story = {
 		const [status, setStatus] = createSignal("not yet")
 		return (
 			<div>
-				<p style={{position: "sticky", top: "0", background: "white"}}>inView: {status()}</p>
+				<p style={{position: "sticky", top: "0", background: "white"}}>
+					inView: {status()}
+				</p>
 				<p>Scroll down to bring the box into view.</p>
 				<div style={{height: "700px"}} />
 				<Motion.div
@@ -49,7 +51,9 @@ export const AmountOption: Story = {
 		const [status, setStatus] = createSignal("not yet")
 		return (
 			<div>
-				<p style={{position: "sticky", top: "0", background: "white"}}>inView (amount: 0.8): {status()}</p>
+				<p style={{position: "sticky", top: "0", background: "white"}}>
+					inView (amount: 0.8): {status()}
+				</p>
 				<p>Requires 80% of the box visible before triggering — scroll slowly.</p>
 				<div style={{height: "700px"}} />
 				<Motion.div

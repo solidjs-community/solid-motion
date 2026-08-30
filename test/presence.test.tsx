@@ -135,7 +135,11 @@ describe("Presence", () => {
 
 		const {container} = render(() => (
 			<Presence exitBeforeEnter>
-				<Show when={condition()} children={<El ref={ref_1} />} fallback={<El ref={ref_2} />} />
+				<Show
+					when={condition()}
+					children={<El ref={ref_1} />}
+					fallback={<El ref={ref_2} />}
+				/>
 			</Presence>
 		))
 

@@ -42,7 +42,8 @@ per-value override syntax:
    Merging here keeps the documented, more ergonomic behavior working.
 */
 function normalizeTransition(transition: unknown): AnimationOptions | undefined {
-	if (!transition || typeof transition !== "object") return transition as AnimationOptions | undefined
+	if (!transition || typeof transition !== "object")
+		return transition as AnimationOptions | undefined
 
 	const base: Record<string, unknown> = {}
 	const perValue: Record<string, Record<string, unknown>> = {}
@@ -54,7 +55,8 @@ function normalizeTransition(transition: unknown): AnimationOptions | undefined 
 	const result: Record<string, unknown> = {...base}
 	for (const [key, override] of Object.entries(perValue)) {
 		const normalizedOverride = {...base}
-		for (const [k, v] of Object.entries(override)) normalizedOverride[k === "easing" ? "ease" : k] = v
+		for (const [k, v] of Object.entries(override))
+			normalizedOverride[k === "easing" ? "ease" : k] = v
 		result[key] = normalizedOverride
 	}
 	return result as AnimationOptions
@@ -102,10 +104,7 @@ interface MountContext {
 }
 
 /** @internal */
-export function createMotionState(
-	initialOptions: Options,
-	parent?: MotionState,
-): MotionState {
+export function createMotionState(initialOptions: Options, parent?: MotionState): MotionState {
 	let options = initialOptions
 	const active = {hover: false, press: false, exit: false}
 
@@ -240,7 +239,10 @@ export function createMotionState(
 			applyStylesDirect(el, startTarget)
 
 			const animateTarget = resolveTarget(options.animate, options.variants) ?? {}
-			if (JSON.stringify(targetValues(startTarget)) !== JSON.stringify(targetValues(animateTarget))) {
+			if (
+				JSON.stringify(targetValues(startTarget)) !==
+				JSON.stringify(targetValues(animateTarget))
+			) {
 				void animateToTarget(animateTarget)
 			}
 
@@ -256,7 +258,9 @@ export function createMotionState(
 		},
 		update(newOptions: Options) {
 			const prevOptions = options
-			const prevAnimate = JSON.stringify(resolveTarget(prevOptions.animate, prevOptions.variants) ?? {})
+			const prevAnimate = JSON.stringify(
+				resolveTarget(prevOptions.animate, prevOptions.variants) ?? {},
+			)
 			options = newOptions
 
 			// only tear down and recreate gesture listeners when a gesture-related

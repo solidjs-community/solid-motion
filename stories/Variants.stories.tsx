@@ -17,7 +17,12 @@ export const StringVariants: Story = {
 			animate="visible"
 			variants={{
 				hidden: {opacity: 0, y: -20, backgroundColor: "royalblue"},
-				visible: {opacity: 1, y: 0, backgroundColor: "royalblue", transition: {duration: 0.6}},
+				visible: {
+					opacity: 1,
+					y: 0,
+					backgroundColor: "royalblue",
+					transition: {duration: 0.6},
+				},
 			}}
 		/>
 	),
@@ -47,7 +52,11 @@ export const NestedInheritance: Story = {
 				animate="visible"
 				variants={{
 					hidden: {y: 30, backgroundColor: "darkorange"},
-					visible: {y: 0, backgroundColor: "darkorange", transition: {duration: 0.6, delay: 0.2}},
+					visible: {
+						y: 0,
+						backgroundColor: "darkorange",
+						transition: {duration: 0.6, delay: 0.2},
+					},
 				}}
 				style={{padding: "16px", "list-style": "none"}}
 			>
@@ -55,7 +64,10 @@ export const NestedInheritance: Story = {
 					animate="visible"
 					variants={{
 						hidden: {backgroundColor: "seagreen"},
-						visible: {backgroundColor: "seagreen", transition: {duration: 0.6, delay: 0.4}},
+						visible: {
+							backgroundColor: "seagreen",
+							transition: {duration: 0.6, delay: 0.4},
+						},
 					}}
 					style={{padding: "12px", color: "white"}}
 				>

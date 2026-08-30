@@ -82,7 +82,9 @@ export const ScrollProgress: Story = {
 						transform: `scaleX(${scrollY().progress})`,
 					}}
 				/>
-				<div style={{height: "2000px", padding: "16px"}}>Scroll down to progress the bar above.</div>
+				<div style={{height: "2000px", padding: "16px"}}>
+					Scroll down to progress the bar above.
+				</div>
 			</div>
 		)
 	},

@@ -67,7 +67,10 @@ export const HoverAndPressComposition: Story = {
 			<div>
 				<p>hover: {hoverStatus()}</p>
 				<p>press: {pressStatus()}</p>
-				<p>Hover first (scales to 1.15, turns orange), then press while hovering (should scale to 0.85, turn crimson).</p>
+				<p>
+					Hover first (scales to 1.15, turns orange), then press while hovering (should
+					scale to 0.85, turn crimson).
+				</p>
 				<Motion.div
 					style={box}
 					hover={{scale: 1.15, backgroundColor: "darkorange"}}

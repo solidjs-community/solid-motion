@@ -156,7 +156,11 @@ export const NestedExit: Story = {
 				</button>
 				<Presence>
 					<Show when={show()}>
-						<Motion.div data-testid="parent" style={{...box, background: "royalblue"}} exit={exit}>
+						<Motion.div
+							data-testid="parent"
+							style={{...box, background: "royalblue"}}
+							exit={exit}
+						>
 							<Motion.div
 								data-testid="child"
 								style={{width: "40px", height: "40px", background: "crimson"}}

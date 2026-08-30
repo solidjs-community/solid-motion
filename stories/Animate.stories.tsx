@@ -19,7 +19,11 @@ const box = {
 /** `initial` -> `animate`: the element animates from its initial style to the animate target on mount. */
 export const BasicEnter: Story = {
 	render: () => (
-		<Motion.div style={box} initial={{opacity: 0, scale: 0.5}} animate={{opacity: 1, scale: 1}} />
+		<Motion.div
+			style={box}
+			initial={{opacity: 0, scale: 0.5}}
+			animate={{opacity: 1, scale: 1}}
+		/>
 	),
 }
 
@@ -63,7 +67,11 @@ export const ReactiveAnimateChange: Story = {
 					Toggle color
 				</Motion.button>
 				<Motion.div
-					style={{width: box.width, height: box.height, "border-radius": box["border-radius"]}}
+					style={{
+						width: box.width,
+						height: box.height,
+						"border-radius": box["border-radius"],
+					}}
 					animate={{backgroundColor: color()}}
 					transition={{duration: 0.5}}
 				/>
