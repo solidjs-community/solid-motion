@@ -20,15 +20,11 @@ test.describe("rendering", () => {
 	})
 
 	/*
-	Known bug, kept as a failing expectation so it reports as soon as it is
-	fixed: `createStyles` builds the `initial` target with motion-dom's
-	`buildHTMLStyles` and applies it as an inline style, but Motion animates
-	SVG geometry via attributes. The inline `height: 20px` therefore outranks
-	the animated `height` attribute in the cascade and the rect never moves.
-	Fixing it means branching `createStyles` onto `buildSVGAttrs` for SVG
-	elements.
+	Regression guard: the `initial` target used to be applied as an inline
+	style even on SVG elements, which outranked the attribute Motion animates
+	and pinned the rect to its starting height forever.
 	*/
-	test.fail("animated svg geometry interpolates", async ({page}) => {
+	test("animated svg geometry interpolates", async ({page}) => {
 		await openDemo(page, "svg-attrs")
 
 		const rect = page.getByTestId("rect")

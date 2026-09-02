@@ -1,6 +1,6 @@
 import {Dynamic} from "@solidjs/web"
 import type {JSX} from "@solidjs/web"
-import {omit, createContext} from "solid-js"
+import {merge, omit, createContext} from "solid-js"
 import {combineStyle} from "@solid-primitives/props"
 import {MotionState} from "./engine.js"
 
@@ -33,8 +33,9 @@ export const MotionComponent = (
 	},
 ): JSX.Element => {
 	const attrs = omit(props, ...OPTION_KEYS, ...ATTR_KEYS)
+	const tag = props.tag || "div"
 
-	const [state, style] = createAndBindMotionState(
+	const [state, startStyles] = createAndBindMotionState(
 		() => root,
 		() => ({
 			initial: props.initial,
@@ -49,19 +50,31 @@ export const MotionComponent = (
 		}),
 		tryUseContext(PresenceContext),
 		tryUseContext(ParentContext),
+		tag,
 	)
+
+	/*
+	Folded into one object rather than spread separately: an extra prop source
+	shifts Solid's hydration key numbering and adds a stray separator to the
+	rendered markup, so an element with no SVG geometry keeps exactly the props
+	it had before. The start target goes last so its geometry wins over a
+	same-named prop, matching how the computed style layers over `props.style`.
+	*/
+	const renderedAttrs = Object.keys(startStyles.attrs).length
+		? merge(attrs, startStyles.attrs)
+		: attrs
 
 	let root!: Element
 	return (
 		<ParentContext value={state}>
 			<Dynamic
-				{...attrs}
+				{...renderedAttrs}
 				ref={(el: Element) => {
 					root = el
 					props.ref?.(el)
 				}}
-				component={props.tag || "div"}
-				style={combineStyle(props.style, style)}
+				component={tag}
+				style={combineStyle(props.style, startStyles.style)}
 			/>
 		</ParentContext>
 	)

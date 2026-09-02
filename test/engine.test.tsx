@@ -19,26 +19,42 @@ function mounted(): HTMLDivElement {
 
 describe("createStyles", () => {
 	test("Maps transform shorthands onto a transform declaration", () => {
-		expect(createStyles({x: 100, scale: 1.5})).toEqual({
+		expect(createStyles({x: 100, scale: 1.5}).style).toEqual({
 			transform: "translateX(100px) scale(1.5)",
 		})
 	})
 
 	test("Uses the first value of a keyframe list", () => {
 		// a static style can't represent a list, so the starting frame is used
-		expect(createStyles({opacity: [0.2, 0.9]})).toEqual({opacity: 0.2})
+		expect(createStyles({opacity: [0.2, 0.9]}).style).toEqual({opacity: 0.2})
 	})
 
 	test("Passes CSS custom properties through", () => {
-		expect(createStyles({"--brand": "red"})).toEqual({"--brand": "red"})
+		expect(createStyles({"--brand": "red"}).style).toEqual({"--brand": "red"})
 	})
 
 	test("Ignores a target's own transition", () => {
-		expect(createStyles({opacity: 1, transition: {duration: 5}})).toEqual({opacity: 1})
+		expect(createStyles({opacity: 1, transition: {duration: 5}}).style).toEqual({opacity: 1})
 	})
 
 	test("Returns nothing for an empty target", () => {
-		expect(createStyles({})).toEqual({})
+		expect(createStyles({})).toEqual({style: {}, attrs: {}})
+	})
+
+	/*
+	SVG geometry has to come out as an attribute. As an inline style it would
+	outrank the attribute Motion animates, and the element would never move.
+	*/
+	test("Emits SVG geometry as attributes, not styles", () => {
+		const {style, attrs} = createStyles({height: 20, opacity: 0.5}, "rect")
+		expect(attrs).toEqual({height: "20px"})
+		expect(style).toEqual({opacity: 0.5})
+	})
+
+	test("Keeps the svg root's own transform in style", () => {
+		const {style, attrs} = createStyles({x: 10}, "svg")
+		expect(attrs).toEqual({})
+		expect(style).toEqual({transform: "translateX(10px)"})
 	})
 })
 
@@ -222,6 +238,60 @@ describe("createMotionState", () => {
 		unmount = state.mount(el)
 		await sleep(50)
 		expect(el.style.opacity).toBe("0.5")
+
+		unmount()
+	})
+
+	/*
+	With no `animate` prop there is nothing for the released gesture to resolve
+	back to, so the engine records what the element showed before the gesture
+	introduced the key and animates to that instead.
+	*/
+	test("A gesture with no animate base reverts to the pre-gesture value", async () => {
+		const el = mounted()
+		el.style.opacity = "1"
+		const state = createMotionState({press: {opacity: 0.3}, transition: {duration: 0.001}})
+		const unmount = state.mount(el)
+
+		el.dispatchEvent(pointer("pointerdown"))
+		await sleep(50)
+		expect(el.style.opacity).toBe("0.3")
+
+		window.dispatchEvent(pointer("pointerup"))
+		await sleep(50)
+		expect(Number(el.style.opacity)).toBeCloseTo(1, 2)
+
+		unmount()
+	})
+
+	test("A transform shorthand reverts to its identity value", async () => {
+		const el = mounted()
+		const state = createMotionState({press: {x: 50}, transition: {duration: 0.001}})
+		const unmount = state.mount(el)
+
+		el.dispatchEvent(pointer("pointerdown"))
+		await sleep(50)
+		expect(el.style.transform).toContain("50px")
+
+		window.dispatchEvent(pointer("pointerup"))
+		await sleep(50)
+		// back to the identity value, which Motion writes out as "none"
+		expect(el.style.transform).toBe("none")
+
+		unmount()
+	})
+
+	test("Applies an SVG start target as attributes", () => {
+		const rect = document.createElementNS("http://www.w3.org/2000/svg", "rect")
+		document.body.appendChild(rect)
+
+		const state = createMotionState({initial: {height: 20, opacity: 0.5}})
+		const unmount = state.mount(rect)
+
+		// geometry lands on the attribute, everything else stays a style
+		expect(rect.getAttribute("height")).toBe("20px")
+		expect(rect.style.opacity).toBe("0.5")
+		expect(rect.style.height).toBe("")
 
 		unmount()
 	})

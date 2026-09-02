@@ -53,13 +53,12 @@ test.describe("gestures", () => {
 	})
 
 	/*
-	Known gap, kept as a failing expectation so it reports as soon as it is
-	fixed: with no `animate` prop the target resolved on hover-out is empty,
-	and an empty target is a no-op, so the element stays on the hover values
-	instead of reverting. Reverting would need the engine to remember the
-	pre-gesture base style.
+	Regression guard: with no `animate` prop the target resolved on hover-out
+	holds no values at all, and an empty target is a no-op. The engine now
+	remembers what the element showed before the gesture introduced the key,
+	so it has something to animate back to.
 	*/
-	test.fail("a gesture with no animate base reverts on leave", async ({page}) => {
+	test("a gesture with no animate base reverts on leave", async ({page}) => {
 		await openDemo(page, "hover-no-base")
 
 		const box = page.getByTestId("box")

@@ -33,12 +33,16 @@ describe("ssr", () => {
 		)
 	})
 
+	/*
+	SVG geometry renders as an attribute, not as a style. An inline style would
+	outrank the attribute Motion animates and pin the element to its `initial`.
+	*/
 	test("Renders svg with attrs", () => {
 		const html = renderToString(() => (
 			<Motion.rect initial={{height: 50}} width="50" x="0" y="100" />
 		))
 		expect(html).toBe(
-			`<rect _hk=2010 width=\"50\" x=\"0\" y=\"100\" style=\"height:50px\"></rect>`,
+			`<rect _hk=2010 width=\"50\" x=\"0\" y=\"100\" height=\"50px\" style=\"\"></rect>`,
 		)
 	})
 

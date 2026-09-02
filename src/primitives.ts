@@ -1,7 +1,7 @@
 import {scrollInfo} from "framer-motion/dom"
 import {isServer} from "@solidjs/web"
 
-import {createMotionState, createStyles, MotionState, style} from "./engine.js"
+import {createMotionState, createStyles, MotionState, StartStyles, style} from "./engine.js"
 import {Accessor, Context, createEffect, createSignal, flush, onCleanup, useContext} from "solid-js"
 
 import {PresenceContext, PresenceContextState} from "./presence.jsx"
@@ -29,7 +29,9 @@ export function createAndBindMotionState(
 	options: Accessor<Options>,
 	presence_state?: PresenceContextState,
 	parent_state?: MotionState,
-): [MotionState, ReturnType<typeof createStyles>] {
+	/* the tag being rendered, so an SVG start target is built as attributes */
+	tag = "div",
+): [MotionState, StartStyles] {
 	const state = createMotionState(
 		presence_state?.initial === false ? {...options(), initial: false} : options(),
 		parent_state,
@@ -80,7 +82,7 @@ export function createAndBindMotionState(
 		},
 	)
 
-	return [state, createStyles(state.getTarget())] as const
+	return [state, createStyles(state.getTarget(), tag)] as const
 }
 
 /**
@@ -100,10 +102,15 @@ export function createMotion(
 		() => target,
 		typeof options === "function" ? options : () => options,
 		presenceState,
+		undefined,
+		target.tagName.toLowerCase(),
 	)
 
-	for (const key in styles) {
-		style.set(target, key, styles[key])
+	for (const key in styles.style) {
+		style.set(target, key, styles.style[key])
+	}
+	for (const key in styles.attrs) {
+		target.setAttribute(key, String(styles.attrs[key]))
 	}
 
 	return state

@@ -1,5 +1,15 @@
 import {animate, inView} from "framer-motion/dom"
-import {hover, press, buildHTMLStyles} from "motion-dom"
+import {
+	hover,
+	press,
+	buildHTMLStyles,
+	buildSVGAttrs,
+	isSVGTag,
+	transformProps,
+	defaultTransformValue,
+	camelToDash,
+} from "motion-dom"
+import {SVGElements} from "@solidjs/web"
 import type {AnimationOptions} from "motion-dom"
 
 import type {Options, Target, VariantDefinition} from "./types.js"
@@ -88,16 +98,40 @@ export function normalizeTransition(transition: unknown): AnimationOptions | und
 	return result as AnimationOptions
 }
 
-/** @internal */
-export function createStyles(target: Target): Record<string, string> {
-	const renderState = {transform: {}, transformOrigin: {}, vars: {}, style: {}}
+/** @internal what a target renders as statically, before anything animates */
+export interface StartStyles {
+	style: Record<string, string>
+	/** SVG geometry, which is carried by attributes rather than by style */
+	attrs: Record<string, string>
+}
+
+/**
+ * @internal
+ * @param tag the element's tag name, which decides whether the target is built
+ * as HTML styles or as SVG attributes
+ */
+export function createStyles(target: Target, tag = "div"): StartStyles {
+	const renderState = {transform: {}, transformOrigin: {}, vars: {}, style: {}, attrs: {}}
 	// a static (non-animated) style can't represent a keyframe list — use its first value
 	const staticValues: Record<string, unknown> = {}
 	for (const [key, value] of Object.entries(targetValues(target))) {
 		staticValues[key] = Array.isArray(value) ? value[0] : value
 	}
-	buildHTMLStyles(renderState as any, staticValues as any)
-	return {...(renderState.vars as any), ...(renderState.style as any)}
+	/*
+	SVG geometry (`height`, `cx`, `r`, ...) is animated by Motion as an
+	attribute, not as a style. Emitting the starting value as an inline style
+	instead would outrank the animated attribute in the cascade and pin the
+	element to its `initial` forever, so SVG elements are built through
+	`buildSVGAttrs`, which splits geometry into `attrs` and leaves the rest
+	(opacity, fill, the `<svg>` root's own transform) in `style`.
+	*/
+	if (SVGElements.has(tag)) buildSVGAttrs(renderState as any, staticValues as any, isSVGTag(tag))
+	else buildHTMLStyles(renderState as any, staticValues as any)
+
+	return {
+		style: {...(renderState.vars as any), ...(renderState.style as any)},
+		attrs: renderState.attrs as Record<string, string>,
+	}
 }
 
 /** @internal */
@@ -109,8 +143,9 @@ export const style = {
 }
 
 function applyStylesDirect(el: Element, target: Target): void {
-	const styles = createStyles(target)
+	const {style: styles, attrs} = createStyles(target, el.tagName.toLowerCase())
 	for (const key in styles) style.set(el, key, styles[key])
+	for (const key in attrs) el.setAttribute(key, String(attrs[key]))
 }
 
 function dispatch(el: Element, type: string, detail: Record<string, unknown>): void {
@@ -221,6 +256,15 @@ export function createMotionState(initialOptions: Options, parent?: MotionState)
 	let lastTarget: Target | undefined
 
 	/*
+	What the element looked like before a gesture layer first introduced a key
+	that no other layer sets. Turning that layer off resolves to a target which
+	simply omits the key, and an omitted key is not an instruction to animate
+	back — without a remembered base value, a `hover` used with no `animate`
+	prop would leave the element stuck on its hover values forever.
+	*/
+	const baseValues: Record<string, unknown> = {}
+
+	/*
 	Scoped to whichever mount() call is currently active. A sibling Motion
 	component can get constructed — and briefly mounted/unmounted again —
 	before its real mount, as a structural side effect of how <Show>/
@@ -267,6 +311,11 @@ export function createMotionState(initialOptions: Options, parent?: MotionState)
 			if (active[layer])
 				Object.assign(target, resolveTarget(options[layer], options.variants))
 		}
+		// bring back the pre-gesture value of anything no active layer drives now
+		const values = target as Record<string, unknown>
+		for (const key in baseValues) {
+			if (!(key in values)) values[key] = baseValues[key]
+		}
 		return target
 	}
 
@@ -310,7 +359,27 @@ export function createMotionState(initialOptions: Options, parent?: MotionState)
 		)
 	}
 
+	/** Reads what the element currently shows for a value nothing else drives. */
+	function readBaseValue(el: Element, key: string): unknown {
+		if (transformProps.has(key)) return defaultTransformValue(key)
+		const computed = window.getComputedStyle(el)
+		return key.startsWith("--")
+			? computed.getPropertyValue(key)
+			: computed.getPropertyValue(camelToDash(key))
+	}
+
+	function captureBaseValues(el: Element, layer: GestureLayer): void {
+		const introduced = targetValues(resolveTarget(options[layer], options.variants))
+		const driven = targetValues(resolveActiveTarget())
+		for (const key of Object.keys(introduced)) {
+			// anything another layer already sets resolves on its own when this one ends
+			if (key in baseValues || key in driven) continue
+			baseValues[key] = readBaseValue(el, key)
+		}
+	}
+
 	function setLayer(el: Element, gesture: Gesture, isActive: boolean, event: unknown): void {
+		if (isActive) captureBaseValues(el, gesture.layer)
 		active[gesture.layer] = isActive
 		dispatch(el, isActive ? gesture.enter : gesture.leave, gesture.detail(event))
 		void applyTarget(resolveActiveTarget())
@@ -345,6 +414,7 @@ export function createMotionState(initialOptions: Options, parent?: MotionState)
 			*/
 			exiting = false
 			active.inView = active.hover = active.press = false
+			for (const key in baseValues) delete baseValues[key]
 
 			const startTarget = getStartTarget()
 			applyStylesDirect(el, startTarget)
