@@ -60,7 +60,7 @@
 		"@solidjs/vite-plugin": "^3.0.0-next.37",
 		"@solidjs/web": "2.0.0-rc.3",
 		"@testing-library/jest-dom": "^6.9.1",
-		"@types/node": "^20.10.6",
+		"@types/node": "^22.12.0",
 		"@typescript-eslint/eslint-plugin": "^6.17.0",
 		"@typescript-eslint/parser": "^6.17.0",
 		"@vitest/coverage-v8": "^4.1.11",

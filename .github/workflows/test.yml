@@ -17,10 +17,14 @@ jobs:
 
       - uses: pnpm/action-setup@v4
 
+      # Node 22, not 20: jsdom 30 pulls in undici, which reads
+      # `markAsUncloneable` off node:worker_threads unconditionally. That only
+      # exists from Node 22.10, so on Node 20 every jsdom test worker dies at
+      # startup with "[vitest-pool]: Failed to start forks worker".
       - name: Setup Node.js environment
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: pnpm
 
       - name: Install dependencies
@@ -46,7 +50,7 @@ jobs:
       - name: Setup Node.js environment
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: pnpm
 
       - name: Install dependencies
