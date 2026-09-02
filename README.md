@@ -323,7 +323,6 @@ For cases where you don't want to render a `<Motion>` component — e.g. animati
 
 ```tsx
 import {motion} from "solid-motion"
-
 ;<div
   ref={motion(() => ({
     initial: {opacity: 0},
@@ -391,9 +390,21 @@ The following types are exported for typing your own components and helpers:
 
 ## Examples
 
-Every feature documented above has a live, interactive example in this repo's Storybook. Run it locally with:
+Every feature documented above has a live example in this repo's playground. Run it locally with:
 
 ```bash
 pnpm install
-pnpm run storybook
+pnpm run dev
 ```
+
+That serves an index of every demo; each one is also reachable directly at `?demo=<id>`. The playground doubles as the app the Playwright suite drives, so the demos are kept working by the tests rather than by hand.
+
+## Testing
+
+```bash
+pnpm test         # Vitest: the state machine, in jsdom and in SSR
+pnpm run test:coverage
+pnpm run test:e2e  # Playwright: real browsers, across Chromium, Firefox and WebKit
+```
+
+Vitest covers the engine's own logic. Playwright covers everything jsdom cannot reach: real animation interpolation through the Web Animations API, real `IntersectionObserver` for `inView`, real pointer input for `hover`/`press`, and real scrolling for `useScroll`.

@@ -1,7 +1,7 @@
 import {createRoot, createSignal, Show} from "solid-js"
 import type {JSX} from "@solidjs/web"
 import {screen, render} from "@solidjs/testing-library"
-import {Presence, VariantDefinition, motion} from "../src/index.jsx"
+import {Presence, VariantDefinition, createMotion, motion, useScroll} from "../src/index.jsx"
 
 const duration = 0.001
 
@@ -27,7 +27,7 @@ describe("motion ref factory", () => {
 		render(() => (
 			<div
 				ref={[
-					el => (ref = el as HTMLDivElement),
+					el => (ref = el),
 					motion(() => ({
 						initial: {opacity: 0.4},
 						animate: {opacity: [0, 0.8]},
@@ -43,15 +43,26 @@ describe("motion ref factory", () => {
 	test("Animation runs when target changes", async () => {
 		const [opacity, setOpacity] = createSignal(0.5)
 
-		const element = createRoot(() => (
+		/*
+		Rendered into the document rather than built in a bare createRoot:
+		Motion reads computed style off the element, and jsdom throws on that
+		for a node with no owner document.
+		*/
+		let ref!: HTMLDivElement
+		render(() => (
 			<div
-				ref={motion(() => ({
-					initial: {opacity: 0},
-					animate: {opacity: opacity()},
-					transition: {duration},
-				}))}
+				data-testid="box"
+				ref={[
+					el => (ref = el),
+					motion(() => ({
+						initial: {opacity: 0},
+						animate: {opacity: opacity()},
+						transition: {duration},
+					})),
+				]}
 			/>
-		)) as HTMLDivElement
+		))
+		const element = ref
 
 		expect(element.style.opacity).toBe("0")
 
@@ -74,7 +85,7 @@ describe("motion ref factory", () => {
 			render(() => (
 				<div
 					ref={[
-						el => (ref = el as HTMLDivElement),
+						el => (ref = el),
 						motion(() => ({
 							initial: {opacity: 0.5},
 							animate: {opacity: 0.9},
@@ -138,5 +149,72 @@ describe("motion ref factory", () => {
 					}, 100)
 				})
 			}))
+	})
+})
+
+describe("createMotion", () => {
+	test("Applies the start target to an element it is handed", () => {
+		const el = document.createElement("div")
+		document.body.appendChild(el)
+
+		const dispose = createRoot(dispose => {
+			createMotion(el, {initial: {opacity: 0.35, x: 40}})
+			return dispose
+		})
+
+		expect(el.style.opacity).toBe("0.35")
+		expect(el.style.transform).toBe("translateX(40px)")
+		dispose()
+	})
+
+	test("Accepts an options accessor as well as a plain object", async () => {
+		const el = document.createElement("div")
+		document.body.appendChild(el)
+
+		const dispose = createRoot(dispose => {
+			createMotion(el, () => ({
+				initial: {opacity: 0.2},
+				animate: {opacity: 0.9},
+				transition: {duration},
+			}))
+			return dispose
+		})
+
+		await sleep(60)
+		expect(el.style.opacity).toBe("0.9")
+		dispose()
+	})
+})
+
+describe("useScroll", () => {
+	test("Starts at zero on both axes", () => {
+		const dispose = createRoot(dispose => {
+			const {time, scrollX, scrollY} = useScroll()
+
+			expect(time()).toBe(0)
+			expect(scrollX().progress).toBe(0)
+			expect(scrollY()).toMatchObject({
+				current: 0,
+				progress: 0,
+				scrollLength: 0,
+				velocity: 0,
+			})
+			return dispose
+		})
+
+		// unsubscribes without throwing
+		expect(() => dispose()).not.toThrow()
+	})
+
+	test("Accepts scroll options", () => {
+		const container = document.createElement("div")
+		document.body.appendChild(container)
+
+		const dispose = createRoot(dispose => {
+			const {scrollY} = useScroll({container, axis: "y"})
+			expect(scrollY().progress).toBe(0)
+			return dispose
+		})
+		dispose()
 	})
 })

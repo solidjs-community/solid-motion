@@ -4,7 +4,13 @@
 	"plugins": ["@typescript-eslint", "no-only-tests", "eslint-comments"],
 	"ignorePatterns": ["node_modules", "dist"],
 	"parserOptions": {
-		"project": ["./tsconfig.json", "./tsconfig.node.json", "./test/tsconfig.json"],
+		"project": [
+			"./tsconfig.json",
+			"./tsconfig.node.json",
+			"./test/tsconfig.json",
+			"./e2e/tsconfig.json",
+			"./playground/tsconfig.json"
+		],
 		"tsconfigRootDir": ".",
 		"sourceType": "module"
 	},

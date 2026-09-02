@@ -13,15 +13,16 @@
 	"scripts": {
 		"prepublishOnly": "pnpm build",
 		"build": "tsup",
-		"test": "pnpm run test:client && pnpm run test:ssr",
-		"test:client": "jest --config jest/jest.config.cjs",
-		"test:ssr": "SSR=true jest --config jest/jest.config.cjs",
+		"dev": "vite --config playground/vite.config.ts",
+		"test": "vitest run",
+		"test:watch": "vitest",
+		"test:coverage": "vitest run --coverage",
+		"test:e2e": "playwright test",
+		"test:e2e:ui": "playwright test --ui",
 		"format": "prettier --cache -w .",
 		"lint": "pnpm run lint:code && pnpm run lint:types",
-		"lint:code": "eslint --ignore-path .gitignore --max-warnings 0 --ext .js,.jsx,.ts,.tsx src",
-		"lint:types": "tsc --noEmit",
-		"storybook": "storybook dev -p 6006",
-		"build-storybook": "storybook build"
+		"lint:code": "eslint --ignore-path .gitignore --max-warnings 0 --ext .js,.jsx,.ts,.tsx src test e2e playground",
+		"lint:types": "tsc --noEmit && tsc --noEmit -p test && tsc --noEmit -p e2e && tsc --noEmit -p playground"
 	},
 	"type": "module",
 	"files": [
@@ -54,31 +55,26 @@
 		"motion-utils": "^13.0.0"
 	},
 	"devDependencies": {
-		"@babel/preset-env": "^7.23.7",
-		"@babel/preset-typescript": "^7.23.3",
-		"@jest/types": "^29.6.3",
+		"@playwright/test": "^1.62.1",
 		"@solidjs/testing-library": "1.0.0-beta.2",
+		"@solidjs/vite-plugin": "^3.0.0-next.37",
 		"@solidjs/web": "2.0.0-rc.3",
-		"@types/jest": "^29.5.11",
+		"@testing-library/jest-dom": "^6.9.1",
 		"@types/node": "^20.10.6",
 		"@typescript-eslint/eslint-plugin": "^6.17.0",
 		"@typescript-eslint/parser": "^6.17.0",
-		"babel-jest": "^29.7.0",
-		"babel-preset-solid": "2.0.0-rc.2",
+		"@vitest/coverage-v8": "^4.1.11",
 		"eslint": "^8.56.0",
 		"eslint-plugin-eslint-comments": "^3.2.0",
 		"eslint-plugin-no-only-tests": "^3.1.0",
-		"jest": "^29.7.0",
-		"jest-environment-jsdom": "^29.7.0",
+		"jsdom": "^30.0.1",
 		"prettier": "^3.1.1",
 		"solid-js": "2.0.0-rc.3",
-		"storybook": "10.5.10",
-		"storybook-solidjs-vite": "10.7.1",
 		"tsup": "^8.0.1",
 		"tsup-preset-solid": "^2.2.0",
 		"typescript": "^5.3.3",
 		"vite": "^8.2.2",
-		"vite-plugin-solid": "3.0.0-next.27"
+		"vitest": "^4.1.11"
 	},
 	"peerDependencies": {
 		"solid-js": "^2.0.0-rc.0"

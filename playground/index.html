@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<title>solid-motion playground</title>
+		<style>
+			body {
+				margin: 0;
+				padding: 24px;
+				font:
+					14px/1.5 system-ui,
+					sans-serif;
+			}
+			.box {
+				width: 80px;
+				height: 80px;
+				border-radius: 8px;
+				background: royalblue;
+			}
+			.spacer {
+				height: 700px;
+			}
+			.status {
+				position: sticky;
+				top: 0;
+				background: white;
+				margin: 0 0 8px;
+			}
+			ul.index {
+				columns: 3;
+				padding-left: 18px;
+			}
+		</style>
+	</head>
+	<body>
+		<div id="root"></div>
+		<script type="module" src="/src/main.tsx"></script>
+	</body>
+</html>

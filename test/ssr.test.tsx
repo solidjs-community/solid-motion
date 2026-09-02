@@ -1,11 +1,6 @@
 import {renderToString} from "@solidjs/web"
 import {Motion, Presence} from "../src/index.jsx"
 
-jest.mock("@solidjs/web", () => ({
-	...jest.requireActual("@solidjs/web"),
-	template: jest.fn(),
-}))
-
 describe("ssr", () => {
 	test("Renders", () => {
 		const html = renderToString(() => <Motion.div />)

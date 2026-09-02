@@ -66,7 +66,8 @@ per-value override syntax:
    of its own completes almost instantly instead of over the base duration).
    Merging here keeps the documented, more ergonomic behavior working.
 */
-function normalizeTransition(transition: unknown): AnimationOptions | undefined {
+/** @internal exported for tests: this compat shim is easier to check directly */
+export function normalizeTransition(transition: unknown): AnimationOptions | undefined {
 	if (!transition || typeof transition !== "object")
 		return transition as AnimationOptions | undefined
 
