@@ -67,7 +67,7 @@ export function createAndBindMotionState(
 			return () => {
 				if (presence_state && options().exit) {
 					state.setActive("exit", true)
-					el_ref.addEventListener("motioncomplete", unmount)
+					el_ref.addEventListener("motioncomplete", unmount, {once: true})
 				} else unmount()
 			}
 		},

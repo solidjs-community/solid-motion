@@ -144,4 +144,14 @@ describe("Motion", () => {
 		fireEvent.pointerEnter(element)
 		expect(captured).toEqual([0])
 	})
+
+	test("Proxy does not turn Motion into a thenable", () => {
+		/*
+		Every unknown key resolves to a component; `then` must not, or awaiting
+		Motion (or lazily importing it) hangs on a fake thenable.
+		*/
+		expect((Motion as any).then).toBeUndefined()
+		expect(typeof Motion.name).toBe("string")
+		expect(typeof (Motion as any).div).toBe("function")
+	})
 })

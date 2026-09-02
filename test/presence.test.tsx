@@ -176,4 +176,98 @@ describe("Presence", () => {
 		expect(ref_1.style.opacity).toBe("0")
 		expect(ref_2.style.opacity).toBe("1")
 	})
+
+	test("Removes the element even when exit resolves to no values", async () => {
+		const [show, setShow] = createSignal(true)
+
+		const {container} = render(() => (
+			<Presence>
+				<Show when={show()}>
+					{/* a variant key with no matching entry — resolves to an empty target */}
+					<Motion.div data-testid="child" animate={{opacity: 1}} exit="missing" />
+				</Show>
+			</Presence>
+		))
+		flush()
+
+		const component = await screen.findByTestId("child")
+		expect(component.isConnected).toBeTruthy()
+
+		setShow(false)
+		flush()
+
+		await new Promise<void>(resolve => setTimeout(resolve, 50))
+
+		expect(component.isConnected).toBeFalsy()
+		expect(container.innerHTML).toBe("")
+		expect(mountedStates.has(component)).toBeFalsy()
+	})
+
+	test("An element that entered during an exit still animates on later updates", async () => {
+		const [condition, setCondition] = createSignal(1)
+		const [opacity, setOpacity] = createSignal(0.5)
+
+		const {container} = render(() => (
+			<Presence>
+				<Show when={condition()} keyed>
+					{key => (
+						<Motion.div
+							data-testid={"child-" + key}
+							animate={{opacity: opacity()}}
+							exit={{opacity: 0}}
+							transition={{duration: 0.001}}
+						/>
+					)}
+				</Show>
+			</Presence>
+		))
+		flush()
+		await new Promise<void>(resolve => setTimeout(resolve, 50))
+
+		/*
+		In the default "parallel" mode the incoming element is briefly torn down
+		and remounted as the outgoing one exits. Its exit flag has to be cleared
+		by that remount, or every later `animate` update resolves to the exit
+		target instead.
+		*/
+		setCondition(2)
+		flush()
+		await new Promise<void>(resolve => setTimeout(resolve, 50))
+
+		const component = container.querySelector<HTMLElement>('[data-testid="child-2"]')!
+		expect(component.style.opacity).toBe("0.5")
+
+		setOpacity(0.9)
+		flush()
+		await new Promise<void>(resolve => setTimeout(resolve, 50))
+
+		expect(component.style.opacity).toBe("0.9")
+	})
+
+	test("initial: false only suppresses children present on the first render", async () => {
+		const [show, setShow] = createSignal(false)
+
+		const {container} = render(() => (
+			<Presence initial={false}>
+				<Show when={show()}>
+					<Motion.div
+						data-testid="late"
+						initial={{opacity: 0}}
+						animate={{opacity: 1}}
+						transition={{duration: 5}}
+					/>
+				</Show>
+			</Presence>
+		))
+		flush()
+		await new Promise<void>(resolve => setTimeout(resolve, 20))
+
+		setShow(true)
+		flush()
+
+		// a child added after the first render animates in normally, so it starts
+		// at its `initial` rather than jumping straight to `animate`
+		const component = container.querySelector<HTMLElement>('[data-testid="late"]')!
+		expect(component.style.opacity).toBe("0")
+	})
 })

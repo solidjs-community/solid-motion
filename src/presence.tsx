@@ -1,7 +1,14 @@
 import {mountedStates} from "./engine.js"
 import {resolveFirst} from "@solid-primitives/refs"
 import {createSwitchTransition} from "@solid-primitives/transition-group"
-import {createContext, createSignal, flush, type FlowComponent, type Accessor} from "solid-js"
+import {
+	createContext,
+	createSignal,
+	flush,
+	onSettled,
+	type FlowComponent,
+	type Accessor,
+} from "solid-js"
 import type {JSX} from "@solidjs/web"
 
 export type PresenceContextState = {
@@ -60,16 +67,20 @@ export const Presence: FlowComponent<{
 								setMount(false)
 								flush()
 								mountedStates.get(el)?.getOptions().exit
-									? el.addEventListener("motioncomplete", () => {
-											/*
-											`done` (transition-group's own callback) writes the
-											signal that actually removes this element from the
-											rendered list — also outside Solid's scheduler, so it
-											needs its own flush to take effect before callers see it.
-											*/
-											done()
-											flush()
-										})
+									? el.addEventListener(
+											"motioncomplete",
+											() => {
+												/*
+												`done` (transition-group's own callback) writes the
+												signal that actually removes this element from the
+												rendered list — also outside Solid's scheduler, so it
+												needs its own flush to take effect before callers see it.
+												*/
+												done()
+												flush()
+											},
+											{once: true},
+										)
 									: done()
 							},
 							onEnter(_, done) {
@@ -83,6 +94,23 @@ export const Presence: FlowComponent<{
 			</PresenceContext>
 		)
 
-	queueMicrotask(() => (state.initial = true))
+	/*
+	`initial={false}` only suppresses the enter animation of the children present
+	on the *first* render; anything added later animates in normally. That means
+	flipping the flag once the first render is done, which is exactly what
+	`onSettled` (Solid 2.0's replacement for 1.x `onMount`) schedules: the next
+	point at which the current reactive activity has settled. A bare
+	`queueMicrotask` only approximates that by piggybacking on the JS microtask
+	queue, which knows nothing about Solid's scheduler and fires whether or not
+	the render it is waiting on has actually finished.
+
+	`state.initial` is deliberately a plain field rather than a signal — children
+	read it once, untracked, while constructing their own MotionState, and it
+	must never re-run anything when it flips.
+	*/
+	onSettled(() => {
+		state.initial = true
+	})
+
 	return render
 }

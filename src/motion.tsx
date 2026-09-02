@@ -94,7 +94,15 @@ export const MotionComponent = (
  * ```
  */
 export const Motion = new Proxy(MotionComponent, {
-	get:
-		(_, tag: string): MotionProxyComponent<any> =>
-		props => <MotionComponent {...props} tag={tag} />,
+	/*
+	Only keys the component function doesn't already answer to are treated as tag
+	names. Without that fallback every access returns a component — including
+	`Motion.then`, which makes `Motion` look like a thenable and hangs anything
+	that awaits it or resolves it as a lazily-imported component. `then` is
+	excluded explicitly because it isn't a property of `Function.prototype`.
+	*/
+	get: (target, key, receiver) =>
+		typeof key === "string" && key !== "then" && !Reflect.has(target, key)
+			? ((props => <MotionComponent {...props} tag={key} />) as MotionProxyComponent<any>)
+			: Reflect.get(target, key, receiver),
 }) as MotionProxy

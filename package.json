@@ -17,8 +17,8 @@
 		"test:client": "jest --config jest/jest.config.cjs",
 		"test:ssr": "SSR=true jest --config jest/jest.config.cjs",
 		"format": "prettier --cache -w .",
-		"lint": "pnpm run lint:code & pnpm run lint:types",
-		"lint:code": "eslint --ignore-path .gitignore --max-warnings 0 src/**/*.{js,ts,tsx,jsx}",
+		"lint": "pnpm run lint:code && pnpm run lint:types",
+		"lint:code": "eslint --ignore-path .gitignore --max-warnings 0 --ext .js,.jsx,.ts,.tsx src",
 		"lint:types": "tsc --noEmit",
 		"storybook": "storybook dev -p 6006",
 		"build-storybook": "storybook build"
