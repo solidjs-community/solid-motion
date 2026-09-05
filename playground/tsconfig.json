@@ -4,6 +4,6 @@
 		"lib": ["ESNext", "DOM"],
 		"jsx": "preserve",
 		"jsxImportSource": "@solidjs/web",
-		"types": ["vitest/globals"]
+		"types": ["node"]
 	}
 }

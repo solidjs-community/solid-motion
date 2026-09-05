@@ -17,10 +17,14 @@ jobs:
 
       - uses: pnpm/action-setup@v4
 
+      # Node 22, not 20: jsdom 30 pulls in undici, which reads
+      # `markAsUncloneable` off node:worker_threads unconditionally. That only
+      # exists from Node 22.10, so on Node 20 every jsdom test worker dies at
+      # startup with "[vitest-pool]: Failed to start forks worker".
       - name: Setup Node.js environment
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: pnpm
 
       - name: Install dependencies
@@ -34,3 +38,33 @@ jobs:
 
       - name: Lint
         run: pnpm lint
+
+  e2e:
+    name: End-to-end
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js environment
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --no-frozen-lockfile --ignore-scripts
+
+      - name: Install Playwright browsers
+        run: pnpm exec playwright install --with-deps chromium firefox webkit
+
+      - name: Run Playwright tests
+        run: pnpm run test:e2e
+
+      - uses: actions/upload-artifact@v4
+        if: ${{ !cancelled() }}
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 7

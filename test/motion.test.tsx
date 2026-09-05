@@ -78,27 +78,34 @@ describe("Motion", () => {
 	})
 
 	test("Animation runs when target changes", async () => {
-		const result = await new Promise(resolve =>
-			createRoot(dispose => {
-				const Component = (props: any): JSX.Element => {
-					return (
-						<Motion.div
-							initial={{opacity: 0}}
-							animate={props.animate}
-							onMotionComplete={({detail}) => {
-								if (detail.target.opacity === 0.8) resolve(true)
-							}}
-							transition={{duration}}
-						/>
-					)
-				}
-				const [animate, setAnimate] = createSignal({opacity: 0.5})
-				render(() => <Component animate={animate()} />)
-				setAnimate({opacity: 0.8})
-				setTimeout(dispose, 20)
-			}),
+		const Component = (props: any): JSX.Element => (
+			<Motion.div
+				initial={{opacity: 0}}
+				animate={props.animate}
+				onMotionComplete={({detail}) => {
+					if (detail.target.opacity === 0.8) resolve(true)
+				}}
+				transition={{duration}}
+			/>
 		)
-		expect(result).toBe(true)
+
+		let resolve!: (value: boolean) => void
+		const completed = new Promise<boolean>(r => (resolve = r))
+
+		/*
+		The signal lives outside the root, and is written to after it: Solid 2.0
+		rejects writes made from inside an owned scope.
+		*/
+		const [animate, setAnimate] = createSignal({opacity: 0.5})
+		const dispose = createRoot(dispose => {
+			render(() => <Component animate={animate()} />)
+			return dispose
+		})
+
+		setAnimate({opacity: 0.8})
+
+		expect(await completed).toBe(true)
+		dispose()
 	})
 
 	test("Accepts default transition", async () => {
@@ -143,5 +150,15 @@ describe("Motion", () => {
 		})
 		fireEvent.pointerEnter(element)
 		expect(captured).toEqual([0])
+	})
+
+	test("Proxy does not turn Motion into a thenable", () => {
+		/*
+		Every unknown key resolves to a component; `then` must not, or awaiting
+		Motion (or lazily importing it) hangs on a fake thenable.
+		*/
+		expect((Motion as any).then).toBeUndefined()
+		expect(typeof Motion.name).toBe("string")
+		expect(typeof (Motion as any).div).toBe("function")
 	})
 })

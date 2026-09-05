@@ -2,7 +2,6 @@
 	"extends": "../tsconfig.base.json",
 	"compilerOptions": {
 		"lib": ["ESNext", "DOM"],
-		"jsx": "preserve",
-		"jsxImportSource": "@solidjs/web"
+		"types": ["node"]
 	}
 }

@@ -1,6 +1,15 @@
-import {animate} from "framer-motion/dom"
-import {inView as motionInView} from "framer-motion/dom"
-import {hover, press, buildHTMLStyles} from "motion-dom"
+import {animate, inView} from "framer-motion/dom"
+import {
+	hover,
+	press,
+	buildHTMLStyles,
+	buildSVGAttrs,
+	isSVGTag,
+	transformProps,
+	defaultTransformValue,
+	camelToDash,
+} from "motion-dom"
+import {SVGElements} from "@solidjs/web"
 import type {AnimationOptions} from "motion-dom"
 
 import type {Options, Target, VariantDefinition} from "./types.js"
@@ -19,12 +28,38 @@ export interface MotionState {
 	getInitialVariantKey(): string | undefined
 }
 
+/* -------------------------------------------------------------------------- */
+/*                              Targets and styles                            */
+/* -------------------------------------------------------------------------- */
+
 function resolveTarget(
 	def: VariantDefinition | undefined,
 	variants: Record<string, Target> | undefined,
 ): Target | undefined {
 	if (def === undefined) return undefined
 	return typeof def === "string" ? variants?.[def] : def
+}
+
+function targetValues(target: Target | undefined): Record<string, unknown> {
+	if (!target) return {}
+	const {transition: _transition, ...values} = target
+	return values
+}
+
+/*
+Order-independent structural compare of two targets' animatable values.
+`initial={{opacity: 0, x: 0}}` and `animate={{x: 0, opacity: 0}}` describe the
+same thing, but a plain JSON.stringify of each would not agree — and this
+comparison is what decides whether an animation runs at all.
+*/
+function sameValues(a: Target | undefined, b: Target | undefined): boolean {
+	const a_values = targetValues(a)
+	const b_values = targetValues(b)
+	const keys = Object.keys(a_values)
+	if (keys.length !== Object.keys(b_values).length) return false
+	return keys.every(
+		key => key in b_values && JSON.stringify(a_values[key]) === JSON.stringify(b_values[key]),
+	)
 }
 
 /*
@@ -41,7 +76,8 @@ per-value override syntax:
    of its own completes almost instantly instead of over the base duration).
    Merging here keeps the documented, more ergonomic behavior working.
 */
-function normalizeTransition(transition: unknown): AnimationOptions | undefined {
+/** @internal exported for tests: this compat shim is easier to check directly */
+export function normalizeTransition(transition: unknown): AnimationOptions | undefined {
 	if (!transition || typeof transition !== "object")
 		return transition as AnimationOptions | undefined
 
@@ -62,22 +98,40 @@ function normalizeTransition(transition: unknown): AnimationOptions | undefined 
 	return result as AnimationOptions
 }
 
-function targetValues(target: Target | undefined): Record<string, unknown> {
-	if (!target) return {}
-	const {transition: _transition, ...values} = target
-	return values
+/** @internal what a target renders as statically, before anything animates */
+export interface StartStyles {
+	style: Record<string, string>
+	/** SVG geometry, which is carried by attributes rather than by style */
+	attrs: Record<string, string>
 }
 
-/** @internal */
-export function createStyles(target: Target): Record<string, string> {
-	const renderState = {transform: {}, transformOrigin: {}, vars: {}, style: {}}
+/**
+ * @internal
+ * @param tag the element's tag name, which decides whether the target is built
+ * as HTML styles or as SVG attributes
+ */
+export function createStyles(target: Target, tag = "div"): StartStyles {
+	const renderState = {transform: {}, transformOrigin: {}, vars: {}, style: {}, attrs: {}}
 	// a static (non-animated) style can't represent a keyframe list — use its first value
 	const staticValues: Record<string, unknown> = {}
 	for (const [key, value] of Object.entries(targetValues(target))) {
 		staticValues[key] = Array.isArray(value) ? value[0] : value
 	}
-	buildHTMLStyles(renderState as any, staticValues as any)
-	return {...(renderState.vars as any), ...(renderState.style as any)}
+	/*
+	SVG geometry (`height`, `cx`, `r`, ...) is animated by Motion as an
+	attribute, not as a style. Emitting the starting value as an inline style
+	instead would outrank the animated attribute in the cascade and pin the
+	element to its `initial` forever, so SVG elements are built through
+	`buildSVGAttrs`, which splits geometry into `attrs` and leaves the rest
+	(opacity, fill, the `<svg>` root's own transform) in `style`.
+	*/
+	if (SVGElements.has(tag)) buildSVGAttrs(renderState as any, staticValues as any, isSVGTag(tag))
+	else buildHTMLStyles(renderState as any, staticValues as any)
+
+	return {
+		style: {...(renderState.vars as any), ...(renderState.style as any)},
+		attrs: renderState.attrs as Record<string, string>,
+	}
 }
 
 /** @internal */
@@ -89,13 +143,94 @@ export const style = {
 }
 
 function applyStylesDirect(el: Element, target: Target): void {
-	const styles = createStyles(target)
+	const {style: styles, attrs} = createStyles(target, el.tagName.toLowerCase())
 	for (const key in styles) style.set(el, key, styles[key])
+	for (const key in attrs) el.setAttribute(key, String(attrs[key]))
 }
 
 function dispatch(el: Element, type: string, detail: Record<string, unknown>): void {
 	el.dispatchEvent(new CustomEvent(type, {detail}))
 }
+
+/* -------------------------------------------------------------------------- */
+/*                               Layers and gestures                          */
+/* -------------------------------------------------------------------------- */
+
+/*
+The animated target is the merge of every currently-active layer, lowest
+priority first — `press` wins over `hover`, which wins over `inView`, which
+wins over the always-active `animate`. Resolving through one ordered list
+means mount, update and every gesture all compute the target the same way,
+instead of each assembling its own idea of what the element should look like.
+*/
+const LAYERS = ["animate", "inView", "hover", "press"] as const
+type Layer = (typeof LAYERS)[number]
+type GestureLayer = Exclude<Layer, "animate">
+
+/*
+`hover`, `press` and `inView` all share the same shape: bind to an element with
+an `(element, event) => cleanup | void` handler, get an unbind back. That lets
+all three be driven by one table instead of three near-identical blocks.
+*/
+type GestureBinder = (
+	el: Element,
+	onStart: (el: Element, event: any) => ((event: any) => void) | void,
+	options?: any,
+) => () => void
+
+interface Gesture {
+	layer: GestureLayer
+	bind: GestureBinder
+	/** event dispatched when the layer switches on / off */
+	enter: string
+	leave: string
+	detail: (event: any) => Record<string, unknown>
+	/** per-gesture binding options pulled off the component's props, if any */
+	bindOptions?: (options: Options) => unknown
+}
+
+const GESTURES: Gesture[] = [
+	{
+		layer: "inView",
+		bind: inView as GestureBinder,
+		enter: "viewenter",
+		leave: "viewleave",
+		detail: entry => ({originalEntry: entry}),
+		bindOptions: options => options.inViewOptions,
+	},
+	{
+		layer: "hover",
+		bind: hover as GestureBinder,
+		enter: "hoverstart",
+		leave: "hoverend",
+		detail: event => ({originalEvent: event}),
+	},
+	{
+		layer: "press",
+		bind: press as GestureBinder,
+		enter: "pressstart",
+		leave: "pressend",
+		detail: event => ({originalEvent: event}),
+	},
+]
+
+/*
+Only rebind when a gesture is added or removed, not whenever its target object
+changes identity — the bound handlers read the latest `options` at fire time, so
+a new `hover={{...}}` object needs no rebind. Solid re-evaluates inline JSX prop
+objects on every read, so comparing those by reference would rebind constantly
+and cut off in-progress interactions.
+*/
+function gesturesChanged(prev: Options, next: Options): boolean {
+	return (
+		GESTURES.some(gesture => !!prev[gesture.layer] !== !!next[gesture.layer]) ||
+		prev.inViewOptions !== next.inViewOptions
+	)
+}
+
+/* -------------------------------------------------------------------------- */
+/*                                    State                                   */
+/* -------------------------------------------------------------------------- */
 
 interface MountContext {
 	element: Element
@@ -106,7 +241,28 @@ interface MountContext {
 /** @internal */
 export function createMotionState(initialOptions: Options, parent?: MotionState): MotionState {
 	let options = initialOptions
-	const active = {hover: false, press: false, exit: false}
+
+	/** which layers currently contribute to the target; `animate` is always on */
+	const active: Record<Layer, boolean> = {
+		animate: true,
+		inView: false,
+		hover: false,
+		press: false,
+	}
+	/** `exit` replaces the layer stack outright rather than merging on top of it */
+	let exiting = false
+
+	/** the target most recently animated to — the baseline `update()` diffs against */
+	let lastTarget: Target | undefined
+
+	/*
+	What the element looked like before a gesture layer first introduced a key
+	that no other layer sets. Turning that layer off resolves to a target which
+	simply omits the key, and an omitted key is not an instruction to animate
+	back — without a remembered base value, a `hover` used with no `animate`
+	prop would leave the element stuck on its hover values forever.
+	*/
+	const baseValues: Record<string, unknown> = {}
 
 	/*
 	Scoped to whichever mount() call is currently active. A sibling Motion
@@ -126,6 +282,7 @@ export function createMotionState(initialOptions: Options, parent?: MotionState)
 		return undefined
 	}
 
+	/** The style to render *before* anything animates — also what SSR paints. */
 	function getStartTarget(): Target {
 		if (options.initial === false) {
 			return resolveTarget(options.animate, options.variants) ?? {}
@@ -146,20 +303,44 @@ export function createMotionState(initialOptions: Options, parent?: MotionState)
 		return resolveTarget(options.initial, options.variants) ?? {}
 	}
 
-	function computeEffectiveTarget(): Target {
-		if (active.exit) return resolveTarget(options.exit, options.variants) ?? {}
-		const target: Target = {...(resolveTarget(options.animate, options.variants) ?? {})}
-		if (active.hover) Object.assign(target, resolveTarget(options.hover, options.variants))
-		if (active.press) Object.assign(target, resolveTarget(options.press, options.variants))
+	/** The single source of truth for what this element should look like right now. */
+	function resolveActiveTarget(): Target {
+		if (exiting) return resolveTarget(options.exit, options.variants) ?? {}
+		const target: Target = {}
+		for (const layer of LAYERS) {
+			if (active[layer])
+				Object.assign(target, resolveTarget(options[layer], options.variants))
+		}
+		// bring back the pre-gesture value of anything no active layer drives now
+		const values = target as Record<string, unknown>
+		for (const key in baseValues) {
+			if (!(key in values)) values[key] = baseValues[key]
+		}
 		return target
 	}
 
-	function animateToTarget(target: Target): Promise<void> {
+	function applyTarget(target: Target): Promise<void> {
+		lastTarget = target
+
 		const ctx = current
 		ctx?.cancelAnimation?.()
 		if (!ctx) return Promise.resolve()
 		const values = targetValues(target)
-		if (Object.keys(values).length === 0) return Promise.resolve()
+		if (Object.keys(values).length === 0) {
+			/*
+			Nothing to animate. An exit still has to report itself finished: both
+			presence.tsx and primitives.ts wait on the motionstart/motioncomplete
+			pair before removing the element, so an `exit` that resolves to no
+			values (`exit={{}}`, or a variant key with no matching entry) would
+			otherwise leave the element in the DOM forever. Deferred by a
+			microtask so listeners attached right after this call still catch it.
+			*/
+			if (!exiting) return Promise.resolve()
+			dispatch(ctx.element, "motionstart", {target})
+			return Promise.resolve().then(() => {
+				if (current === ctx) dispatch(ctx.element, "motioncomplete", {target})
+			})
+		}
 
 		// merge, then normalize once — normalizing an already-normalized base
 		// transition again would re-merge its own per-value overrides against a
@@ -178,55 +359,43 @@ export function createMotionState(initialOptions: Options, parent?: MotionState)
 		)
 	}
 
+	/** Reads what the element currently shows for a value nothing else drives. */
+	function readBaseValue(el: Element, key: string): unknown {
+		if (transformProps.has(key)) return defaultTransformValue(key)
+		const computed = window.getComputedStyle(el)
+		return key.startsWith("--")
+			? computed.getPropertyValue(key)
+			: computed.getPropertyValue(camelToDash(key))
+	}
+
+	function captureBaseValues(el: Element, layer: GestureLayer): void {
+		const introduced = targetValues(resolveTarget(options[layer], options.variants))
+		const driven = targetValues(resolveActiveTarget())
+		for (const key of Object.keys(introduced)) {
+			// anything another layer already sets resolves on its own when this one ends
+			if (key in baseValues || key in driven) continue
+			baseValues[key] = readBaseValue(el, key)
+		}
+	}
+
+	function setLayer(el: Element, gesture: Gesture, isActive: boolean, event: unknown): void {
+		if (isActive) captureBaseValues(el, gesture.layer)
+		active[gesture.layer] = isActive
+		dispatch(el, isActive ? gesture.enter : gesture.leave, gesture.detail(event))
+		void applyTarget(resolveActiveTarget())
+	}
+
 	function bindGestures(el: Element): () => void {
-		const unbinds: Array<() => void> = []
-		if (options.hover) {
-			unbinds.push(
-				hover(el, (_el, startEvent) => {
-					active.hover = true
-					dispatch(el, "hoverstart", {originalEvent: startEvent})
-					void animateToTarget(computeEffectiveTarget())
-					return endEvent => {
-						active.hover = false
-						dispatch(el, "hoverend", {originalEvent: endEvent})
-						void animateToTarget(computeEffectiveTarget())
-					}
-				}),
-			)
-		}
-		if (options.press) {
-			unbinds.push(
-				press(el, (_el, startEvent) => {
-					active.press = true
-					dispatch(el, "pressstart", {originalEvent: startEvent})
-					void animateToTarget(computeEffectiveTarget())
-					return endEvent => {
-						active.press = false
-						dispatch(el, "pressend", {originalEvent: endEvent})
-						void animateToTarget(computeEffectiveTarget())
-					}
-				}),
-			)
-		}
-		if (options.inView) {
-			unbinds.push(
-				motionInView(
-					el,
-					(entry: any) => {
-						dispatch(el, "viewenter", {originalEntry: entry})
-						void animateToTarget({
-							...(resolveTarget(options.animate, options.variants) ?? {}),
-							...resolveTarget(options.inView, options.variants),
-						})
-						return leaveEntry => {
-							dispatch(el, "viewleave", {originalEntry: leaveEntry})
-							void animateToTarget(computeEffectiveTarget())
-						}
-					},
-					options.inViewOptions as any,
-				),
-			)
-		}
+		const unbinds = GESTURES.filter(gesture => options[gesture.layer]).map(gesture =>
+			gesture.bind(
+				el,
+				(_el, startEvent) => {
+					setLayer(el, gesture, true, startEvent)
+					return endEvent => setLayer(el, gesture, false, endEvent)
+				},
+				gesture.bindOptions?.(options),
+			),
+		)
 		return () => unbinds.forEach(unbind => unbind())
 	}
 
@@ -235,16 +404,24 @@ export function createMotionState(initialOptions: Options, parent?: MotionState)
 			const ctx: MountContext = {element: el}
 			current = ctx
 
+			/*
+			A state object outlives its element: under a <Presence>, a Motion can
+			be exit-animated and torn down, then mounted again by the very next
+			enter (see primitives.ts's mount-gating effect). Flags left over from
+			that previous life would otherwise keep resolving to a stale target —
+			a still-set `exiting` in particular pins the element to its exit
+			target and blocks every later `animate` update.
+			*/
+			exiting = false
+			active.inView = active.hover = active.press = false
+			for (const key in baseValues) delete baseValues[key]
+
 			const startTarget = getStartTarget()
 			applyStylesDirect(el, startTarget)
 
-			const animateTarget = resolveTarget(options.animate, options.variants) ?? {}
-			if (
-				JSON.stringify(targetValues(startTarget)) !==
-				JSON.stringify(targetValues(animateTarget))
-			) {
-				void animateToTarget(animateTarget)
-			}
+			const target = resolveActiveTarget()
+			lastTarget = target
+			if (!sameValues(startTarget, target)) void applyTarget(target)
 
 			ctx.unbindGestures = bindGestures(el)
 			mountedStates.set(el, state)
@@ -258,33 +435,22 @@ export function createMotionState(initialOptions: Options, parent?: MotionState)
 		},
 		update(newOptions: Options) {
 			const prevOptions = options
-			const prevAnimate = JSON.stringify(
-				resolveTarget(prevOptions.animate, prevOptions.variants) ?? {},
-			)
 			options = newOptions
 
-			// only tear down and recreate gesture listeners when a gesture-related
-			// prop actually changed — not on every unrelated reactive update (e.g.
-			// a reactive `animate` value), which would cut off an in-progress
-			// hover/press/inView interaction for no reason
-			const gesturesChanged =
-				prevOptions.hover !== options.hover ||
-				prevOptions.press !== options.press ||
-				prevOptions.inView !== options.inView ||
-				prevOptions.inViewOptions !== options.inViewOptions
-			if (gesturesChanged && current) {
+			if (current && gesturesChanged(prevOptions, options)) {
 				current.unbindGestures?.()
 				current.unbindGestures = bindGestures(current.element)
 			}
 
-			const nextAnimate = resolveTarget(options.animate, options.variants) ?? {}
-			if (!active.exit && prevAnimate !== JSON.stringify(nextAnimate)) {
-				void animateToTarget(computeEffectiveTarget())
-			}
+			// an exiting element is on its way out — leave it on its exit target
+			if (exiting) return
+
+			const target = resolveActiveTarget()
+			if (!sameValues(target, lastTarget)) void applyTarget(target)
 		},
-		setActive(type: "exit", isActive: boolean) {
-			active[type] = isActive
-			return animateToTarget(computeEffectiveTarget())
+		setActive(_type: "exit", isActive: boolean) {
+			exiting = isActive
+			return applyTarget(resolveActiveTarget())
 		},
 		getTarget: getStartTarget,
 		getOptions: () => options,
