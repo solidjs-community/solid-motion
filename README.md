@@ -11,9 +11,7 @@
 
 **A tiny, performant animation library for Solid 2.0. Powered by [Motion](https://motion.dev/).**
 
-## Introduction
-
-Motion for Solid is a small animation library for Solid 2.0. It takes advantage of Solid's excellent performance and simple declarative syntax. This package supplies springs, gestures, scroll-triggered animations, variants, and hardware accelerated animations.
+It gives you springs, gestures, scroll-triggered animations, variants, drag, layout animation and hardware accelerated animations, in Solid's declarative syntax.
 
 ## Contents
 
@@ -42,7 +40,7 @@ Motion for Solid is a small animation library for Solid 2.0. It takes advantage 
 
 ## Installation
 
-Solid Motion can be installed via npm. It requires `solid-js@^2.0.0-rc.0` (Solid 2.0 is currently in beta/RC).
+Requires `solid-js@^2.0.0-rc.0`.
 
 ```bash
 npm install solid-motion
@@ -54,17 +52,7 @@ yarn add solid-motion
 
 ## Create an animation
 
-Import the `Motion` component and use it anywhere in your Solid components:
-
-```tsx
-import {Motion} from "solid-motion"
-
-function MyComponent() {
-  return <Motion>Hello world</Motion>
-}
-```
-
-The `Motion` component can be used to create an animatable HTML or SVG element. By default, it will render a `div` element:
+`Motion` renders an animatable HTML or SVG element. It renders a `div` by default.
 
 ```tsx
 import {Motion} from "solid-motion"
@@ -79,52 +67,55 @@ function App() {
 }
 ```
 
-But any HTML or SVG element can be rendered, by defining it like this: `<Motion.button>`, `<Motion.svg>`, `<Motion.rect>`, etc.
+Pick another element with `<Motion.button>`, `<Motion.svg>`, `<Motion.rect>`, or with `<Motion tag="button">`.
 
-Or like this: `<Motion tag="button">`
-
-All non-animation props (`id`, `class`, `onClick`, SVG attributes like `viewBox`, event listeners, etc.) pass straight through to the rendered element, same as any other Solid component.
+Non-animation props pass straight through to the rendered element. That includes `id`, `class`, `onClick`, event listeners and SVG attributes like `viewBox`.
 
 ## Props reference
 
-Every animation-related prop below accepts either a direct target object (`{opacity: 1}`) or a string key that's looked up in the [`variants`](#variants) prop.
+Every animation prop below takes either a target object (`{opacity: 1}`) or a string key looked up in [`variants`](#variants).
 
-| Prop            | Type                            | Description                                                                                                                                                                                         |
-| --------------- | ------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `initial`       | target \| string \| `false`     | The style to render _before_ any animation runs. Defaults to the element's current computed style. Set to `false` to skip the enter animation entirely — see [Enter animations](#enter-animations). |
-| `animate`       | target \| string                | The style to animate to. Reactive — changing it (e.g. via a signal) re-triggers an animation to the new target.                                                                                     |
-| `exit`          | target \| string                | The style to animate to when the element is removed. Only takes effect anywhere inside a [`Presence`](#exit-animations) ancestor's subtree; without one, the element unmounts immediately.          |
-| `hover`         | target \| string                | The style to animate to while the pointer is hovering the element. See [Gestures](#gestures-hover-press-and-focus).                                                                                 |
-| `press`         | target \| string                | The style to animate to while the element is being pressed. Layers on top of `hover` if both are active.                                                                                            |
-| `focus`         | target \| string                | The style to animate to while the element has visible (keyboard) focus. See [Gestures](#gestures-hover-press-and-focus).                                                                            |
-| `inView`        | target \| string                | The style to animate to when the element scrolls into view. See [Scroll-triggered animations](#scroll-triggered-animations).                                                                        |
-| `inViewOptions` | `{root?, margin?, amount?}`     | Options controlling when `inView` triggers — see [Scroll-triggered animations](#scroll-triggered-animations).                                                                                       |
-| `dragging`      | target \| string                | The style to animate to while the element is being dragged. See [Drag](#drag).                                                                                                                      |
-| `variants`      | `Record<string, target>`        | A map of named targets that any of the props above can reference by string key. See [Variants](#variants).                                                                                          |
-| `transition`    | object                          | Controls duration, easing, delay, and per-value overrides for the animation. See [Transition options](#transition-options).                                                                         |
-| `tag`           | string                          | Explicitly sets the rendered element tag, as an alternative to `Motion.tag` proxy access.                                                                                                           |
-| `style`         | CSS \| `MotionValue`s           | Ordinary CSS, plus transform shorthands (`x`, `scale`, …) and [motion values](#motion-values) bound straight to the element.                                                                        |
-| `reducedMotion` | `"never"`\|`"user"`\|`"always"` | Normally set for a subtree with [`MotionConfig`](#motionconfig-and-reduced-motion) instead.                                                                                                         |
+| Prop            | Type                            | Description                                                                                                                       |
+| --------------- | ------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| `initial`       | target \| string \| `false`     | The style to render before any animation runs. Defaults to the element's computed style. Set `false` to skip the enter animation. |
+| `animate`       | target \| string                | The style to animate to. Reactive, so changing it animates to the new target.                                                     |
+| `exit`          | target \| string                | The style to animate to when the element is removed. Needs a [`Presence`](#exit-animations) ancestor, otherwise it is ignored.    |
+| `hover`         | target \| string                | The style to animate to while the pointer is over the element.                                                                    |
+| `press`         | target \| string                | The style to animate to while the element is pressed.                                                                             |
+| `focus`         | target \| string                | The style to animate to while the element has visible focus.                                                                      |
+| `inView`        | target \| string                | The style to animate to when the element scrolls into view.                                                                       |
+| `inViewOptions` | `{root?, margin?, amount?}`     | Controls when `inView` triggers. See [Scroll-triggered animations](#scroll-triggered-animations).                                 |
+| `dragging`      | target \| string                | The style to animate to while the element is dragged. See [Drag](#drag).                                                          |
+| `variants`      | `Record<string, target>`        | Named targets that any prop above can reference by key. See [Variants](#variants).                                                |
+| `transition`    | object                          | Duration, easing, delay and per-value overrides. See [Transition options](#transition-options).                                   |
+| `tag`           | string                          | Sets the rendered tag, as an alternative to `Motion.tag`.                                                                         |
+| `style`         | CSS \| `MotionValue`s           | Ordinary CSS, transform shorthands like `x` and `scale`, and [motion values](#motion-values).                                     |
+| `reducedMotion` | `"never"`\|`"user"`\|`"always"` | Usually set for a whole subtree with [`MotionConfig`](#motionconfig-and-reduced-motion) instead.                                  |
 
-Dragging and layout have their own props — [`drag`, `dragConstraints`, `dragElastic`, `dragMomentum`, `dragTransition`](#drag) and [`layout`, `layoutTransition`](#layout-animation) — documented in their own sections.
+Drag and layout have their own props. See [Drag](#drag) and [Layout animation](#layout-animation).
 
-A target object accepts any CSS property (camelCase or kebab-case), the shorthand transform values (`x`, `y`, `scale`, `rotate`, etc.), CSS custom properties (`"--my-var"`), and can optionally carry its own `transition` override (see [Transition options](#transition-options)).
+A target object accepts:
+
+- Any CSS property, in camelCase or kebab-case.
+- Transform shorthands such as `x`, `y`, `scale` and `rotate`.
+- CSS custom properties such as `"--my-var"`.
+- Its own `transition`, which overrides the component's.
 
 ## Enter animations
 
-Elements will automatically `animate` to the values defined in `animate` when they're created — animating from whatever `initial` describes (or the element's current/default style, if `initial` isn't set) to the `animate` target.
+An element animates to `animate` when it is created. It starts from `initial`, or from its current style if `initial` is not set.
 
-This can be disabled by setting the `initial` prop to `false`. The styles defined in `animate` will be applied immediately when the element is first created, with no animation.
+Set `initial={false}` to apply `animate` immediately with no animation.
 
 ```tsx
 <Motion initial={false} animate={{x: 100}} />
 ```
 
-If `initial` and `animate` already describe the same values, no animation runs at all.
+If `initial` and `animate` describe the same values, no animation runs.
 
 ## Exit animations
 
-When an element is removed with `<Show>` it can be animated out with the `Presence` component and the `exit` prop. `Presence` keeps the element mounted until its exit animation finishes, then removes it:
+`Presence` keeps a removed element mounted until its `exit` animation finishes.
 
 ```tsx
 import {createSignal, Show} from "solid-js"
@@ -151,7 +142,7 @@ function App() {
 }
 ```
 
-`exit` can be provided a `transition` of its own, that overrides the component's `transition`:
+`exit` can carry its own `transition`, which overrides the component's.
 
 ```tsx
 <Presence>
@@ -164,7 +155,7 @@ function App() {
 </Presence>
 ```
 
-Every `Motion` in the exiting subtree takes part, not just the top one: when descendants have their own `exit` props — with their own durations — `Presence` waits for all of them to finish before removing anything. The element being transitioned doesn't have to be a `Motion` itself either, so a plain wrapper around animated children works:
+Every `Motion` in the exiting subtree takes part, not just the top one. `Presence` waits for all of them before removing anything, so descendants can use different durations. The transitioning element does not have to be a `Motion` itself.
 
 ```tsx
 <Presence>
@@ -179,7 +170,7 @@ Every `Motion` in the exiting subtree takes part, not just the top one: when des
 </Presence>
 ```
 
-`Presence` handles any number of children, each entering and leaving on its own schedule. Removing one item from a list animates just that item out, in place, while its siblings stay put:
+`Presence` handles any number of children, each on its own schedule. Removing one list item animates just that item out, in place.
 
 ```tsx
 <Presence>
@@ -189,10 +180,10 @@ Every `Motion` in the exiting subtree takes part, not just the top one: when des
 </Presence>
 ```
 
-The one exception is [`exitBeforeEnter`](#presence-props), which by definition transitions a single element at a time: it has to keep the incoming element out of the DOM until the outgoing one is done, so it resolves only the first child. A `Motion` that ends up as a later sibling of an `exitBeforeEnter` `Presence` is never rendered, and warns to the console saying so.
+[`exitBeforeEnter`](#presence-props) is the exception. It transitions one element at a time, so it resolves only the first child. A later sibling is never rendered, and warns to the console.
 
 ```tsx
-// ✗ under exitBeforeEnter, only the first is ever rendered
+// ✗ only the first is ever rendered
 <Presence exitBeforeEnter>
   <Motion.div exit={{opacity: 0}} />
   <Motion.div exit={{opacity: 0}} />
@@ -211,10 +202,10 @@ The one exception is [`exitBeforeEnter`](#presence-props), which by definition t
 
 ## `Presence` props
 
-| Prop              | Type    | Default | Description                                                                                                                                                                          |
-| ----------------- | ------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `initial`         | boolean | `true`  | If `false`, disables the enter animation for every child `Motion` element the _first_ time `Presence` itself is rendered. Subsequent elements entering later still animate normally. |
-| `exitBeforeEnter` | boolean | `false` | If `true`, waits for the outgoing element's exit animation to finish before starting the incoming element's enter animation, instead of running both at once.                        |
+| Prop              | Type    | Default | Description                                                                                                                     |
+| ----------------- | ------- | ------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| `initial`         | boolean | `true`  | If `false`, disables the enter animation for every child the first time `Presence` renders. Children added later still animate. |
+| `exitBeforeEnter` | boolean | `false` | If `true`, waits for the outgoing element to finish before the incoming one enters, instead of running both at once.            |
 
 ```tsx
 <Presence initial={false}>
@@ -233,21 +224,21 @@ import {MotionConfig} from "solid-motion"
 </MotionConfig>
 ```
 
-| Prop            | Type                                | Default   | Description                                                                                    |
-| --------------- | ----------------------------------- | --------- | ---------------------------------------------------------------------------------------------- |
-| `reducedMotion` | `"never"` \| `"user"` \| `"always"` | `"never"` | How to treat the user's `prefers-reduced-motion` setting.                                      |
-| `transition`    | object                              | —         | A default [`transition`](#transition-options) for descendants that don't set one of their own. |
+| Prop            | Type                                | Default   | Description                                                    |
+| --------------- | ----------------------------------- | --------- | -------------------------------------------------------------- |
+| `reducedMotion` | `"never"` \| `"user"` \| `"always"` | `"never"` | How to treat the user's `prefers-reduced-motion` setting.      |
+| `transition`    | object                              | none      | A default [`transition`](#transition-options) for descendants. |
 
-Both are inherited, and a nested `MotionConfig` only overrides the props it sets. An element's own `transition` always wins over the config's.
+Both are inherited. A nested `MotionConfig` overrides only the props it sets, and an element's own `transition` always wins.
 
 ### Reduced motion
 
-Set `reducedMotion="user"` to respect the operating system's "reduce motion" accessibility setting. When it's active, _positional_ values — every transform, plus `width`, `height`, `top`, `left`, `right` and `bottom` — are applied instantly, while everything else keeps animating.
+`reducedMotion="user"` respects the operating system's reduce motion setting. When it is active, positional values are applied instantly and everything else still animates. Positional means every transform, plus `width`, `height`, `top`, `left`, `right` and `bottom`.
 
-That split is deliberate, and matches Motion's own behaviour: movement across the screen is what triggers vestibular discomfort, whereas a fade or a colour change does not. Suppressing every animation would instead strip out the meaning the animation was carrying.
+The split matches Motion's own behaviour. Movement across the screen is what causes discomfort, while a fade or a colour change does not.
 
 ```tsx
-// with reduced motion active, this lands at its new position immediately
+// with reduced motion active this lands at its new position immediately,
 // but still fades in over 0.4s
 <MotionConfig reducedMotion="user">
   <Motion.div
@@ -258,11 +249,11 @@ That split is deliberate, and matches Motion's own behaviour: movement across th
 </MotionConfig>
 ```
 
-`reducedMotion` can also be set on a single element, though the config is the usual place for it.
+`reducedMotion` also works on a single element.
 
 ## Transition options
 
-We can change the type of animation used by passing a `transition` prop.
+`transition` controls how a target is animated.
 
 ```tsx
 <Motion
@@ -271,7 +262,7 @@ We can change the type of animation used by passing a `transition` prop.
 />
 ```
 
-By default transition options are applied to all values, but we can also override on a per-value basis — any option not specified in the override is inherited from the base transition:
+Options apply to every value by default. Override one value by name. Anything the override leaves out is inherited from the base.
 
 ```tsx
 <Motion
@@ -283,9 +274,9 @@ By default transition options are applied to all values, but we can also overrid
 />
 ```
 
-`transition` also accepts spring physics options (`{type: "spring", stiffness, damping, mass}`), `delay`, and `repeat`/`repeatType` — anything supported by Motion's own `animate()` options at [motion.dev](https://motion.dev/).
+`transition` also accepts spring options (`{type: "spring", stiffness, damping, mass}`), `delay`, and `repeat`/`repeatType`. Anything Motion's own [`animate()`](https://motion.dev/) accepts works here.
 
-Taking advantage of Solid's reactivity is just as easy. Simply provide any of the Motion properties as accessors to have them change reactively:
+For reactive animations, put signals inside the target object. `animate` does not accept an accessor function.
 
 ```tsx
 const [bg, setBg] = createSignal("red")
@@ -301,17 +292,15 @@ return (
 )
 ```
 
-The result is a button that begins red and upon being pressed transitions to blue. `animate` doesn't accept an accessor function. For reactive properties simply place signals in the object similar to using the `style` prop.
-
 ## Keyframes
 
-Values can also be set as arrays, to define a series of keyframes.
+An array defines a series of keyframes.
 
 ```tsx
 <Motion animate={{x: [0, 100, 50]}} />
 ```
 
-By default, keyframes are spaced evenly throughout `duration`, but this can be adjusted by providing progress values (`0` to `1`) to `offset`:
+Keyframes are spaced evenly across `duration`. Pass progress values from `0` to `1` in `offset` to change that.
 
 ```tsx
 <Motion
@@ -322,7 +311,7 @@ By default, keyframes are spaced evenly throughout `duration`, but this can be a
 
 ## Variants
 
-Instead of passing target objects directly, you can define a `variants` map and reference entries by name. This is useful for reusing the same named states across `initial`, `animate`, `exit`, `hover`, `press`, and `inView`:
+Define a `variants` map and reference entries by name. This reuses the same named states across `initial`, `animate`, `exit`, `hover`, `press` and `inView`.
 
 ```tsx
 <Motion.div
@@ -335,7 +324,7 @@ Instead of passing target objects directly, you can define a `variants` map and 
 />
 ```
 
-**Variant key inheritance:** a nested `Motion` element with no `initial` of its own inherits the _key_ (e.g. `"hidden"`) from its closest ancestor that has one, and resolves that key against its **own** `variants` map. This lets a parent set `initial="hidden"` once and have descendants each define what "hidden" means for themselves, without repeating `initial` at every level:
+A nested `Motion` with no `initial` inherits the key from its closest ancestor that has one, then resolves that key against its own `variants`. A parent can set `initial="hidden"` once and let each descendant decide what "hidden" means.
 
 ```tsx
 <Motion.div
@@ -352,11 +341,11 @@ Instead of passing target objects directly, you can define a `variants` map and 
 </Motion.div>
 ```
 
-Note that only `initial` is inherited this way — `animate`/`exit`/`hover`/`press`/`inView` must be set on each element that should react to them.
+Only `initial` is inherited. Set `animate`, `exit`, `hover`, `press` and `inView` on each element that needs them.
 
 ## Gestures: hover, press and focus
 
-`hover`, `press` and `focus` animate an element in response to interaction, without needing to write your own event handlers:
+`hover`, `press` and `focus` animate an element on interaction, with no event handlers of your own.
 
 ```tsx
 <Motion.div
@@ -366,19 +355,19 @@ Note that only `initial` is inherited this way — `animate`/`exit`/`hover`/`pre
 />
 ```
 
-Overlapping properties are layered `animate` → `inView` → `focus` → `hover` → `press` (the same order Motion uses), so pressing while already hovering applies `press`, and releasing falls back to `hover`.
+Overlapping properties layer in the order `animate`, `inView`, `focus`, `hover`, `press`. This is the same order Motion uses. Pressing while hovering applies `press`, and releasing falls back to `hover`.
 
-`focus` only fires for _visible_ focus — it is gated on `:focus-visible`, which is the browser's own judgement of whether focus deserves a ring. Clicking a button focuses it without triggering `focus`; tabbing to it does.
+`focus` only fires for visible focus, because it is gated on `:focus-visible`. Clicking a button does not trigger it. Tabbing to it does.
 
 ```tsx
 <Motion.button focus={{scale: 1.05}} press={{scale: 0.95}} />
 ```
 
-Neither prop needs an `animate` alongside it. When a gesture ends, every property it introduced animates back to a resting value — taken from `animate` or `initial` if either defines it, and otherwise read off the element itself.
+None of these need an `animate` alongside them. When a gesture ends, each property it introduced animates back to a resting value. That value comes from `animate` or `initial` if either defines it, and is otherwise read off the element.
 
 ## Scroll-triggered animations
 
-`inView` animates an element when it scrolls into (and back out of) the viewport, using an `IntersectionObserver` under the hood:
+`inView` animates an element when it scrolls into the viewport, and back out again. It uses an `IntersectionObserver`.
 
 ```tsx
 <Motion.div
@@ -390,27 +379,27 @@ Neither prop needs an `animate` alongside it. When a gesture ends, every propert
 
 `inViewOptions` accepts:
 
-| Option   | Type                          | Description                                                                                                                 |
-| -------- | ----------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
-| `root`   | `Element \| Document`         | The scrolling container to observe within. Defaults to the browser viewport.                                                |
-| `margin` | string                        | A CSS margin-like string (e.g. `"-100px"`) that grows or shrinks the root's bounding box before intersection is calculated. |
-| `amount` | `"some"` \| `"all"` \| number | How much of the element must be visible to trigger — a fraction (`0`–`1`), or `"some"`/`"all"`.                             |
+| Option   | Type                          | Description                                                                               |
+| -------- | ----------------------------- | ----------------------------------------------------------------------------------------- |
+| `root`   | `Element \| Document`         | The scrolling container to observe within. Defaults to the viewport.                      |
+| `margin` | string                        | A CSS margin string such as `"-100px"`, which grows or shrinks the root's bounding box.   |
+| `amount` | `"some"` \| `"all"` \| number | How much of the element must be visible. A fraction from `0` to `1`, or `"some"`/`"all"`. |
 
 ## Event handlers
 
-Every `Motion` component also accepts these optional event handler props:
+Every `Motion` component accepts these optional handlers.
 
-| Handler                                | Fires when                                                                  | `event.detail`                                                           |
-| -------------------------------------- | --------------------------------------------------------------------------- | ------------------------------------------------------------------------ |
-| `onMotionStart`                        | An animation (from any of `animate`/`exit`/`hover`/`press`/`inView`) begins | `{target}` — the resolved target being animated to                       |
-| `onMotionComplete`                     | That animation finishes                                                     | `{target}`                                                               |
-| `onHoverStart` / `onHoverEnd`          | Pointer enters / leaves the element                                         | `{originalEvent}` — the underlying `PointerEvent`                        |
-| `onPressStart` / `onPressEnd`          | Pointer is pressed / released on the element                                | `{originalEvent}`                                                        |
-| `onFocusStart` / `onFocusEnd`          | Element gains / loses visible focus (per `focus`)                           | `{originalEvent}` — the underlying `FocusEvent`                          |
-| `onDragStart` / `onDrag` / `onDragEnd` | A drag begins, moves or ends                                                | `{originalEvent, offset}` — the pointer event and the `{x, y}` travelled |
-| `onViewEnter` / `onViewLeave`          | Element enters / leaves the viewport (per `inView`/`inViewOptions`)         | `{originalEntry}` — the underlying `IntersectionObserverEntry`           |
+| Handler                                | Fires when                                                                 | `event.detail`                                         |
+| -------------------------------------- | -------------------------------------------------------------------------- | ------------------------------------------------------ |
+| `onMotionStart`                        | An animation begins, from any of `animate`/`exit`/`hover`/`press`/`inView` | `{target}`, the resolved target being animated to      |
+| `onMotionComplete`                     | That animation finishes                                                    | `{target}`                                             |
+| `onHoverStart` / `onHoverEnd`          | Pointer enters or leaves the element                                       | `{originalEvent}`, a `PointerEvent`                    |
+| `onPressStart` / `onPressEnd`          | Pointer is pressed or released on the element                              | `{originalEvent}`                                      |
+| `onFocusStart` / `onFocusEnd`          | Element gains or loses visible focus                                       | `{originalEvent}`, a `FocusEvent`                      |
+| `onDragStart` / `onDrag` / `onDragEnd` | A drag begins, moves or ends                                               | `{originalEvent, offset}`, with the `{x, y}` travelled |
+| `onViewEnter` / `onViewLeave`          | Element enters or leaves the viewport                                      | `{originalEntry}`, an `IntersectionObserverEntry`      |
 
-`onMotionStart`/`onMotionComplete` only fire when an animation actually runs. A target that resolves to no animatable values — a `variants` key with no match, or a target carrying nothing but a `transition` — is a no-op and reports neither event.
+`onMotionStart` and `onMotionComplete` fire only when an animation actually runs. A target with no animatable values reports neither. That covers a `variants` key with no match, and a target carrying nothing but a `transition`.
 
 ```tsx
 <Motion.div
@@ -421,21 +410,21 @@ Every `Motion` component also accepts these optional event handler props:
 
 ## Drag
 
-`drag` makes an element draggable, writing straight to its `x`/`y` motion values:
+`drag` makes an element draggable by writing to its `x` and `y` motion values.
 
 ```tsx
 <Motion.div drag />
 <Motion.div drag="x" />
 ```
 
-| Prop              | Type                             | Default | Description                                                                           |
-| ----------------- | -------------------------------- | ------- | ------------------------------------------------------------------------------------- |
-| `drag`            | boolean \| `"x"` \| `"y"`        | `false` | Enables dragging, optionally on one axis only.                                        |
-| `dragging`        | target \| string                 | —       | The style to animate to while a drag is in progress.                                  |
-| `dragConstraints` | `{top?, left?, right?, bottom?}` | —       | Bounds in pixels, relative to where the element started.                              |
-| `dragElastic`     | boolean \| number                | `0.5`   | How far past a bound the element still follows the pointer. `0` pins it to the bound. |
-| `dragMomentum`    | boolean                          | `true`  | Whether releasing carries the element on with the velocity it was thrown at.          |
-| `dragTransition`  | object                           | —       | Overrides the inertia settings applied on release.                                    |
+| Prop              | Type                             | Default | Description                                                                  |
+| ----------------- | -------------------------------- | ------- | ---------------------------------------------------------------------------- |
+| `drag`            | boolean \| `"x"` \| `"y"`        | `false` | Enables dragging, optionally on one axis.                                    |
+| `dragging`        | target \| string                 | none    | The style to animate to while a drag is in progress.                         |
+| `dragConstraints` | `{top?, left?, right?, bottom?}` | none    | Bounds in pixels, relative to where the element started.                     |
+| `dragElastic`     | boolean \| number                | `0.5`   | How far past a bound the element follows the pointer. `0` pins it.           |
+| `dragMomentum`    | boolean                          | `true`  | Whether releasing carries the element on with the velocity it was thrown at. |
+| `dragTransition`  | object                           | none    | Overrides the inertia settings applied on release.                           |
 
 ```tsx
 <Motion.div
@@ -446,29 +435,29 @@ Every `Motion` component also accepts these optional event handler props:
 />
 ```
 
-A press that never moves more than a few pixels stays a press, so a button inside a draggable still clicks. Only one element drags at a time, so a draggable nested inside another doesn't move both. `onDragStart`, `onDrag` and `onDragEnd` report `{originalEvent, offset}`.
+A press that moves only a few pixels stays a press, so a button inside a draggable still clicks. Only one element drags at a time, so a draggable inside another does not move both.
 
 ## Layout animation
 
-`layout` animates an element to its new position whenever the layout moves it — a list reordering, a sibling appearing above it, a container resizing:
+`layout` animates an element to its new position whenever layout moves it, such as a list reordering or a container resizing.
 
 ```tsx
 <For each={items()}>{item => <Motion.li layout>{item.label}</Motion.li>}</For>
 ```
 
-It works by [FLIP](https://aerotwist.com/blog/flip-your-animations/): the element is already at its new position, held back by a transform that then animates away. `layoutTransition` overrides the transition used; without one it uses a spring.
+It uses [FLIP](https://aerotwist.com/blog/flip-your-animations/). The element is already at its new position, held back by a transform that animates away. `layoutTransition` overrides the transition, which is a spring by default.
 
-**Position only.** A change in _size_ is not animated. Animating size means scaling the element, which stretches its text and every child inside it, and undoing that distortion needs a full projection tree that counter-scales each descendant and corrects border radii. This is the behaviour Motion calls `layout="position"`; the size half is not implemented.
+Position only. A change in size is not animated, because that would scale the element and stretch its text and children. This matches Motion's `layout="position"`.
 
-Layout offsets use the `translateX`/`translateY` transform slots, so they compose with — rather than fight — an `x` or `y` you animate yourself.
+Layout offsets use the `translateX` and `translateY` slots, so they compose with an `x` or `y` you animate yourself.
 
 ## Motion values
 
-Every animated property is held in its own `MotionValue`. That's mostly an implementation detail — it's what lets properties animate independently, so retargeting `x` mid-flight leaves a running `opacity` animation to finish rather than stranding it — but you can create and drive values yourself.
+Every animated property is held in a `MotionValue`. That is what lets properties animate independently, so retargeting `x` mid-flight leaves a running `opacity` animation alone. You can create and drive values yourself.
 
-A `MotionValue` is deliberately **not** a signal: writing to one schedules no render, and reading one subscribes to nothing. A value driven at 60fps by scroll or a spring would otherwise re-run every computation that touched it, once per frame. Motion writes it to the DOM on its own frame loop instead.
+A `MotionValue` is not a signal. Writing to one schedules no render, and reading one subscribes to nothing. Motion writes it to the DOM on its own frame loop, so a value driven at 60fps does not re-run every computation that touched it.
 
-Bind one by putting it in a `style` prop:
+Bind one through `style`.
 
 ```tsx
 import {Motion, createMotionValue} from "solid-motion"
@@ -479,7 +468,7 @@ function Example() {
 }
 ```
 
-`style` also accepts Motion's transform shorthands (`x`, `y`, `scale`, `rotate`, …) alongside ordinary CSS.
+`style` also accepts transform shorthands such as `x`, `y`, `scale` and `rotate`, alongside ordinary CSS.
 
 ### Deriving values
 
@@ -499,11 +488,11 @@ const smooth = createSpring(x, {stiffness: 200, damping: 30})
 ;<Motion.div style={{x, opacity}} />
 ```
 
-Derived values recompute on Motion's frame loop rather than on the write, so a burst of updates in one frame costs one recomputation. Each is torn down with the owner that created it, so call these inside a component.
+Derived values recompute on Motion's frame loop, so a burst of updates in one frame costs one recomputation. Each is disposed with the owner that created it, so call these inside a component.
 
-Animating a property that has a value bound to it retargets **that** value rather than shadowing it, so `x.get()` keeps reporting the truth while an `animate` prop drives it.
+Animating a property that has a value bound to it retargets that value rather than shadowing it, so `x.get()` stays accurate while an `animate` prop drives it.
 
-`createMotion` has no `style` prop to read, so pass values through the `values` option instead:
+`createMotion` has no `style` prop, so pass values through `values` instead.
 
 ```tsx
 createMotion(el, () => ({values: {x}, animate: {opacity: 1}}))
@@ -511,7 +500,7 @@ createMotion(el, () => ({values: {x}, animate: {opacity: 1}}))
 
 ## Custom components
 
-`Motion.create` wraps a component of your own so it accepts the animation props, the way `Motion.div` does for a plain element:
+`Motion.create` wraps your own component so it accepts the animation props, the way `Motion.div` does for a plain element.
 
 ```tsx
 import {Motion} from "solid-motion"
@@ -531,21 +520,24 @@ const MotionCard = Motion.create(Card)
 </MotionCard>
 ```
 
-The wrapped component has to do two things: **forward its `ref`** to a real DOM element — that element is what gets animated — and **apply the `style`** it is handed, which carries the resolved `initial` styles.
+The wrapped component must do two things:
 
-The animation props are consumed by `Motion` and are not passed on. Pass `{forwardMotionProps: true}` if the wrapped component wants them too:
+- Forward its `ref` to a real DOM element. That element is what gets animated.
+- Apply the `style` it is handed, which carries the resolved `initial` styles.
+
+The animation props are consumed by `Motion` and are not passed on. Pass `{forwardMotionProps: true}` if the wrapped component wants them too.
 
 ```tsx
 const MotionCard = Motion.create(Card, {forwardMotionProps: true})
 ```
 
-SVG geometry in `initial` (`height`, `cx`, …) isn't resolved for custom components — without a tag to inspect, the start target is built as HTML styles. Use `Motion.rect` and friends for SVG.
+SVG geometry in `initial`, such as `height` and `cx`, is not resolved for custom components. There is no tag to inspect, so the start target is built as HTML styles. Use `Motion.rect` and friends for SVG.
 
 ## Low-level primitives
 
-For cases where you don't want to render a `<Motion>` component — e.g. animating an element you don't otherwise control — two lower-level primitives are also exported:
+Two primitives animate an element without rendering a `Motion` component. Use them for elements you do not otherwise control.
 
-**`motion`** — a ref factory. Pass its return value to any element's `ref`:
+`motion` is a ref factory. Pass its return value to any element's `ref`.
 
 ```tsx
 import {motion} from "solid-motion"
@@ -558,11 +550,9 @@ import {motion} from "solid-motion"
 />
 ```
 
-The options accessor is reactive, the same as a `<Motion>` component's props. It can be composed with other refs using Solid's array-ref syntax: `ref={[otherRef, motion(() => ({...}))]}`.
+The options accessor is reactive, like a `Motion` component's props. Compose it with other refs using Solid's array-ref syntax: `ref={[otherRef, motion(() => ({...}))]}`.
 
-Call `motion()` from inside a component (or another owned scope). It creates its effects there, which ties the animation's lifetime to that component: the element is unregistered, its gestures unbound and any running animation cancelled when the component is disposed. The same applies to `createMotion` and `useScroll` — called outside an owned scope, Solid warns (`NO_OWNER_EFFECT` / `NO_OWNER_CLEANUP`) and there is nothing to clean them up.
-
-**`createMotion`** — the imperative form, for when you already have an `Element` reference:
+`createMotion` is the imperative form, for when you already have an element.
 
 ```tsx
 import {createMotion} from "solid-motion"
@@ -570,11 +560,13 @@ import {createMotion} from "solid-motion"
 createMotion(myElement, () => ({animate: {opacity: 1}}))
 ```
 
-It returns a [`MotionState`](#typescript) and, like `motion`, must be called from an owned scope.
+It returns a [`MotionState`](#typescript).
+
+Call both from inside a component or another owned scope. They create their effects there, which ties the animation's lifetime to that scope. On disposal the element is unregistered, its gestures unbound and any running animation cancelled. The same applies to `useScroll`. Called outside an owned scope, Solid warns with `NO_OWNER_EFFECT` or `NO_OWNER_CLEANUP` and nothing cleans them up.
 
 ## Scroll-linked animations
 
-While `inView` (see [Scroll-triggered animations](#scroll-triggered-animations)) animates _to_ a target once an element crosses into view, `useScroll` instead gives you a continuously-updating scroll progress value to drive your own animations directly from — e.g. a progress bar, or a value passed into `animate`:
+`inView` animates to a target once an element crosses into view. `useScroll` instead gives a continuously updating scroll progress value, for driving your own animations.
 
 ```tsx
 import {useScroll} from "solid-motion"
@@ -600,61 +592,76 @@ function App() {
 
 `useScroll(options?)` returns:
 
-| Value                 | Type                                                                                                         | Description                                                                  |
-| --------------------- | ------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------- |
-| `time`                | `Accessor<number>`                                                                                           | The current scroll-tracking timestamp.                                       |
-| `scrollX` / `scrollY` | `Accessor<{current, offset, progress, scrollLength, velocity, targetOffset, targetLength, containerLength}>` | Per-axis scroll info — `progress` (`0`–`1`) is the most commonly used field. |
+| Value                 | Type                                                                                                         | Description                                            |
+| --------------------- | ------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------ |
+| `time`                | `Accessor<number>`                                                                                           | The current scroll-tracking timestamp.                 |
+| `scrollX` / `scrollY` | `Accessor<{current, offset, progress, scrollLength, velocity, targetOffset, targetLength, containerLength}>` | Per-axis scroll info. `progress` runs from `0` to `1`. |
 
-`options` accepts `container`/`target` (to track a scrollable element instead of the page), `axis`, and `offset` — see Motion's [`scroll` docs](https://motion.dev/docs/scroll) for the full set, which this passes straight through to.
+`options` accepts `container` or `target` to track a scrollable element instead of the page, plus `axis` and `offset`. Everything is passed straight through to Motion's [`scroll`](https://motion.dev/docs/scroll).
 
 ## TypeScript
 
-The following types are exported for typing your own components and helpers:
+These types are exported for typing your own components and helpers.
 
-- `Options` — the full prop shape accepted by `Motion`/`motion`/`createMotion` (everything in the [props reference](#props-reference) except `tag`).
-- `Target` — a single style target object (what `animate`, `initial`, etc. accept directly).
-- `VariantDefinition` — `Target | string`, what each animation prop actually accepts.
-- `MotionEvent`, `CustomPointerEvent`, `ViewEvent` — the `CustomEvent` subtypes passed to the [event handlers](#event-handlers).
-- `ViewportOptions` — the shape of `inViewOptions`.
-- `MotionComponentProps` — the full props type for the `<Motion>` component, including children and event handlers.
-- `ReducedMotion` — `"never" | "user" | "always"`, the `reducedMotion` prop's type.
-- `MotionConfigState` — the value carried by `MotionConfigContext`.
-- `MotionComponentOptions` / `AnimatableProps` — the options `Motion.create` accepts, and the props a wrapped component must accept.
-- `DragAxis`, `DragConstraints` — the `drag` and `dragConstraints` prop types.
-- `CustomDragEvent`, `CustomFocusEvent` — the event types passed to the drag and focus handlers.
-- `MotionValue` — re-exported from Motion; what `createMotionValue` and friends return.
-- `MotionStyle` — the `style` prop's type, widened to accept `MotionValue`s and transform shorthands.
-- `MotionState` — what `createMotion` returns. `getTarget()` and `getOptions()` read the element's start target and current options; the rest is driven by this library.
-- `PresenceContextState` — the value carried by `PresenceContext`, and the type of `createMotion`'s optional third argument.
-- `PresenceExitRegistry` — how an exiting element hands itself to its enclosing `Presence`; reachable through `PresenceContextState["exits"]`.
+- `Options` is the full prop shape accepted by `Motion`, `motion` and `createMotion`, minus `tag`.
+- `Target` is a single style target object, what `animate` and `initial` accept directly.
+- `VariantDefinition` is `Target | string`, what each animation prop accepts.
+- `MotionEvent`, `CustomPointerEvent` and `ViewEvent` are the `CustomEvent` subtypes passed to the [event handlers](#event-handlers).
+- `ViewportOptions` is the shape of `inViewOptions`.
+- `MotionComponentProps` is the full props type for `Motion`, including children and event handlers.
+- `ReducedMotion` is `"never" | "user" | "always"`.
+- `MotionConfigState` is the value carried by `MotionConfigContext`.
+- `MotionComponentOptions` and `AnimatableProps` are the options `Motion.create` accepts, and the props a wrapped component must accept.
+- `DragAxis` and `DragConstraints` are the `drag` and `dragConstraints` prop types.
+- `CustomDragEvent` and `CustomFocusEvent` are the event types passed to the drag and focus handlers.
+- `MotionValue` is re-exported from Motion. It is what `createMotionValue` and friends return.
+- `MotionStyle` is the `style` prop's type, widened to accept `MotionValue`s and transform shorthands.
+- `MotionState` is what `createMotion` returns. `getTarget()` and `getOptions()` read the start target and current options. The rest is driven by this library.
+- `PresenceContextState` is the value carried by `PresenceContext`, and the type of `createMotion`'s optional third argument.
+- `PresenceExitRegistry` is how an exiting element hands itself to its enclosing `Presence`, reachable through `PresenceContextState["exits"]`.
 
-`PresenceContext` itself is exported too, for reading the enclosing `Presence` from a component of your own. Note that Solid 2's `useContext` throws when there is no provider, so guard the read if the component can render outside a `Presence`.
+`PresenceContext` is exported too, for reading the enclosing `Presence` from your own component. Solid 2's `useContext` throws when there is no provider, so guard the read if the component can render outside a `Presence`.
 
 ## Examples
 
-Every feature documented above has a live example in this repo's playground. Run it locally with:
+Every feature above has a live example in the playground.
 
 ```bash
 pnpm install
 pnpm run dev
 ```
 
-That serves an index of every demo; each one is also reachable directly at `?demo=<id>`. The playground doubles as the app the Playwright suite drives, so the demos are kept working by the tests rather than by hand.
+That serves an index of every demo. Each one is also reachable at `?demo=<id>`. The playground is the app the Playwright suite drives, so the tests keep the demos working.
+
+The same examples are also available as stories.
+
+```bash
+pnpm run storybook
+```
 
 ## Testing
 
 ```bash
-pnpm test         # Vitest: the state machine, in jsdom and in SSR
+pnpm test             # Vitest, in jsdom and in SSR
 pnpm run test:coverage
-pnpm run test:e2e  # Playwright: real browsers, across Chromium, Firefox and WebKit
+pnpm run test:e2e     # Playwright, across Chromium, Firefox and WebKit
 ```
 
-The e2e suite serves the playground on port 5173. If that port is already taken — Vite's default, so it often is — set `PLAYWRIGHT_PORT` to something free, otherwise Playwright reuses whatever is already listening there and every test times out:
+Vitest covers the engine's logic. Playwright covers what jsdom cannot reach:
+
+- Real animation interpolation through the Web Animations API.
+- Real `IntersectionObserver` for `inView`.
+- Real pointer input for `hover` and `press`.
+- Real scrolling for `useScroll`.
+
+Install the browsers once.
+
+```bash
+pnpm exec playwright install chromium firefox webkit
+```
+
+The e2e suite serves the playground on port 5173. Vite's default is the same port, so it is often taken. Set `PLAYWRIGHT_PORT` to something free, otherwise Playwright reuses whatever is already listening and every test times out.
 
 ```bash
 PLAYWRIGHT_PORT=5199 pnpm run test:e2e
 ```
-
-Browsers are installed separately, once: `pnpm exec playwright install chromium firefox webkit`.
-
-Vitest covers the engine's own logic. Playwright covers everything jsdom cannot reach: real animation interpolation through the Web Animations API, real `IntersectionObserver` for `inView`, real pointer input for `hover`/`press`, and real scrolling for `useScroll`.
