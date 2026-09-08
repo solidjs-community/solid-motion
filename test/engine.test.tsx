@@ -4,8 +4,8 @@ import type {MotionEvent, Target} from "../src/index.jsx"
 const sleep = (ms: number): Promise<void> => new Promise(resolve => setTimeout(resolve, ms))
 
 /*
-motion-dom filters out non-primary pointers, and jsdom's PointerEvent
-defaults to an empty `pointerType` with `isPrimary: false`, which the filter
+motion-dom filters out non-primary pointers. A PointerEvent built by hand
+defaults to an empty `pointerType` with `isPrimary: false`, which that filter
 rejects. These spell out a plain left-button mouse press.
 */
 const pointer = (type: string): PointerEvent =>
@@ -508,5 +508,102 @@ describe("createMotionState", () => {
 		expect(el.style.opacity).toBe("0")
 
 		unmount()
+	})
+})
+
+/*
+These need a real IntersectionObserver, so they were unreachable while the
+suite ran in jsdom. The Playwright suite covers `inView` at the app level.
+These cover it at the layer level, where it has to compose with the others.
+*/
+describe("inView", () => {
+	/** A tall filler element, so the box under test starts out of view. */
+	function spacer(): HTMLElement {
+		const el = document.createElement("div")
+		el.style.height = "150vh"
+		document.body.appendChild(el)
+		return el
+	}
+
+	test("Animates when the element scrolls into view", async () => {
+		const filler = spacer()
+		const el = mounted()
+		el.style.height = "80px"
+
+		const state = createMotionState({
+			animate: {opacity: 1},
+			inView: {opacity: 0.2},
+			transition: {duration: 0.05},
+		})
+		const unmount = state.mount(el)
+
+		let entry: unknown
+		el.addEventListener("viewenter", e => {
+			entry = (e as CustomEvent).detail.originalEntry
+		})
+
+		el.scrollIntoView()
+		await sleep(200)
+
+		// the handler is handed the observer entry, not the element
+		expect((entry as IntersectionObserverEntry).isIntersecting).toBe(true)
+		expect(Number(window.getComputedStyle(el).opacity)).toBeCloseTo(0.2, 1)
+
+		unmount()
+		filler.remove()
+	})
+
+	test("Reverts when the element leaves the viewport", async () => {
+		const filler = spacer()
+		const el = mounted()
+		el.style.height = "80px"
+
+		const state = createMotionState({
+			animate: {opacity: 1},
+			inView: {opacity: 0.2},
+			transition: {duration: 0.05},
+		})
+		const unmount = state.mount(el)
+
+		el.scrollIntoView()
+		await sleep(200)
+		expect(Number(window.getComputedStyle(el).opacity)).toBeCloseTo(0.2, 1)
+
+		window.scrollTo(0, 0)
+		await sleep(200)
+		expect(Number(window.getComputedStyle(el).opacity)).toBeCloseTo(1, 1)
+
+		unmount()
+		filler.remove()
+	})
+
+	/*
+	inView sits below hover in the layer order, so a hover must merge over it
+	rather than replace it.
+	*/
+	test("Keeps the inView values underneath a hover", async () => {
+		const filler = spacer()
+		const el = mounted()
+		el.style.height = "80px"
+
+		const state = createMotionState({
+			animate: {opacity: 1},
+			inView: {x: 120},
+			hover: {opacity: 0.5},
+			transition: {duration: 0.05},
+		})
+		const unmount = state.mount(el)
+
+		el.scrollIntoView()
+		await sleep(200)
+		expect(el.style.transform).toContain("120")
+
+		el.dispatchEvent(pointer("pointerenter"))
+		await sleep(200)
+		expect(Number(window.getComputedStyle(el).opacity)).toBeCloseTo(0.5, 1)
+		expect(el.style.transform).toContain("120")
+
+		unmount()
+		filler.remove()
 	})
 })

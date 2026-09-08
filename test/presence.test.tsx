@@ -16,10 +16,10 @@ advancing animation time.
 const tick = (): Promise<void> => sleep(0)
 
 /*
-jsdom reports an unset `opacity` as `0`, so animating to `{opacity: 0}` from the
-browser default is a zero-length animation that lands in a frame or two whatever
-its `duration` says. Tests below that need a *real* exit animation therefore
-give the element an explicit `initial={{opacity: 1}}`.
+Tests below that need a real exit animation give the element an explicit
+`initial={{opacity: 1}}`, so the animation always has a full 1 to 0 to cover
+and its `duration` is what decides how long that takes. A browser resolves an
+unset `opacity` to `1` anyway, so this is belt and braces.
 */
 
 const TestComponent = (

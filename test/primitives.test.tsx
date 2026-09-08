@@ -45,9 +45,9 @@ describe("motion ref factory", () => {
 		const [opacity, setOpacity] = createSignal(0.5)
 
 		/*
-		Rendered into the document rather than built in a bare createRoot:
-		Motion reads computed style off the element, and jsdom throws on that
-		for a node with no owner document.
+		Rendered into the document rather than built in a bare createRoot.
+		Motion reads computed style off the element, which only resolves once
+		the element is in a document.
 		*/
 		let ref!: HTMLDivElement
 		render(() => (

@@ -8,10 +8,10 @@ const sleep = (ms: number): Promise<void> => new Promise(resolve => setTimeout(r
 const frames = (): Promise<void> => sleep(80)
 
 /*
-jsdom has no layout: every getBoundingClientRect() is zeroes, so there is no
-movement for FLIP to notice. Stubbing the box per element is what makes the
-geometry testable at all — and it is only geometry, which is exactly the part
-that has to be right. Real measurement is covered by the Playwright suite.
+Stubbing the box per element pins the geometry FLIP reads, so a test can move
+an element by an exact amount and assert the exact transform. Otherwise the
+numbers would depend on how the test page happens to lay out. Real measurement
+is covered by the Playwright suite.
 */
 function stubBox(el: Element, box: {left: number; top: number}): void {
 	Object.defineProperty(el, "getBoundingClientRect", {

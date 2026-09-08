@@ -1,37 +1,39 @@
 import {defineConfig} from "vitest/config"
 import solid from "@solidjs/vite-plugin"
+import {playwright} from "@vitest/browser-playwright"
 
 /*
 Two projects, because the library has two compilation targets and the Solid
-JSX transform has to be configured differently for each:
+JSX transform has to be configured differently for each.
 
-- `client` compiles the DOM transform and runs in jsdom.
-- `ssr` compiles the string-rendering transform and runs in plain node, so
-  the server build is never loaded alongside jsdom.
+- `client` compiles the DOM transform and runs in a real Chromium.
+- `ssr` compiles the string-rendering transform and runs in plain node.
 
-The old jest setup did this with two babel transformers and an `SSR=true`
-environment variable that selected between two config objects. Vitest runs
-both in one pass instead, so `pnpm test` covers client and server together.
+The client project used to run in jsdom, which implements neither the Web
+Animations API that Motion drives its animations with nor
+IntersectionObserver. Both had to be stubbed, so `inView` had no unit test at
+all and animated values were never really interpolated. A real browser needs
+no stubs, runs in about the same time, and reaches the same coverage.
+
+Only Chromium is used here. The Playwright suite in `e2e/` is what covers
+Firefox and WebKit, at the level where engine differences actually matter.
 */
 export default defineConfig({
 	test: {
 		projects: [
 			{
 				plugins: [solid()],
-				resolve: {
-					/*
-					Picks the "browser" exports condition so @solidjs/web resolves
-					its DOM build rather than the server one.
-					*/
-					conditions: ["browser", "development"],
-				},
 				test: {
 					name: "client",
-					environment: "jsdom",
 					include: ["test/**/*.test.{ts,tsx}"],
 					exclude: ["test/ssr.test.tsx"],
-					setupFiles: ["test/setup.ts"],
 					globals: true,
+					browser: {
+						enabled: true,
+						headless: true,
+						provider: playwright(),
+						instances: [{browser: "chromium"}],
+					},
 				},
 			},
 			{
@@ -57,10 +59,10 @@ export default defineConfig({
 			*/
 			exclude: ["src/index.tsx", "src/types.ts"],
 			thresholds: {
-				statements: 95,
+				statements: 96,
 				branches: 92,
-				functions: 92,
-				lines: 95,
+				functions: 96,
+				lines: 97,
 			},
 		},
 	},

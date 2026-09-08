@@ -644,10 +644,12 @@ That serves an index of every demo; each one is also reachable directly at `?dem
 ## Testing
 
 ```bash
-pnpm test         # Vitest: the state machine, in jsdom and in SSR
+pnpm test         # Vitest: the state machine, in Chromium and in SSR
 pnpm run test:coverage
-pnpm run test:e2e  # Playwright: real browsers, across Chromium, Firefox and WebKit
+pnpm run test:e2e  # Playwright: the app, across Chromium, Firefox and WebKit
 ```
+
+Both suites need a browser. Install them once with `pnpm exec playwright install chromium firefox webkit`.
 
 The e2e suite serves the playground on port 5173. If that port is already taken — Vite's default, so it often is — set `PLAYWRIGHT_PORT` to something free, otherwise Playwright reuses whatever is already listening there and every test times out:
 
@@ -655,6 +657,4 @@ The e2e suite serves the playground on port 5173. If that port is already taken 
 PLAYWRIGHT_PORT=5199 pnpm run test:e2e
 ```
 
-Browsers are installed separately, once: `pnpm exec playwright install chromium firefox webkit`.
-
-Vitest covers the engine's own logic. Playwright covers everything jsdom cannot reach: real animation interpolation through the Web Animations API, real `IntersectionObserver` for `inView`, real pointer input for `hover`/`press`, and real scrolling for `useScroll`.
+Vitest runs the unit tests in a real Chromium through browser mode, so they get real animation interpolation, a real `IntersectionObserver` and real computed styles. Playwright drives the whole playground app instead, across three engines.

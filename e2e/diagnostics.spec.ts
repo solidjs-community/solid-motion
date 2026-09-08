@@ -3,8 +3,8 @@ import {expect, test} from "@playwright/test"
 /*
 Solid 2 reports reactivity mistakes as dev-mode console diagnostics rather than
 as failures — an unowned effect, a flush that is a silent no-op, a top-level
-prop read that will never update. None of those surface in jsdom or in an
-assertion, so this walks every playground demo in a real dev build and fails on
+prop read that will never update. None of those surface as an assertion
+failure, so this walks every playground demo in a real dev build and fails on
 any of them.
 
 The demo list is scraped from the playground's own index page rather than

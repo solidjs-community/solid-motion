@@ -7,3 +7,5 @@ playwright-report
 coverage
 
 storybook-static
+.vitest-attachments
+test/__screenshots__

@@ -17,10 +17,7 @@ jobs:
 
       - uses: pnpm/action-setup@v4
 
-      # Node 22, not 20: jsdom 30 pulls in undici, which reads
-      # `markAsUncloneable` off node:worker_threads unconditionally. That only
-      # exists from Node 22.10, so on Node 20 every jsdom test worker dies at
-      # startup with "[vitest-pool]: Failed to start forks worker".
+      # Vite 8 requires ^20.19.0 || >=22.12.0.
       - name: Setup Node.js environment
         uses: actions/setup-node@v4
         with:
@@ -32,6 +29,10 @@ jobs:
 
       - name: Build package
         run: pnpm run build
+
+      # The unit tests run in a real Chromium through Vitest browser mode.
+      - name: Install Playwright Chromium
+        run: pnpm exec playwright install --with-deps chromium
 
       - name: Test
         run: pnpm run test

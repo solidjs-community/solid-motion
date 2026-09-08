@@ -6,9 +6,9 @@ import type {CustomDragEvent} from "../src/index.jsx"
 const sleep = (ms: number): Promise<void> => new Promise(resolve => setTimeout(resolve, ms))
 
 /*
-motion-dom filters out non-primary pointers, and jsdom's PointerEvent defaults
-to an empty `pointerType` with `isPrimary: false`. These spell out a plain
-left-button mouse drag.
+motion-dom filters out non-primary pointers. A PointerEvent built by hand
+defaults to an empty `pointerType` with `isPrimary: false`, which that filter
+rejects. These spell out a plain left-button mouse drag.
 */
 function pointer(type: string, x: number, y: number): PointerEvent {
 	return new PointerEvent(type, {
