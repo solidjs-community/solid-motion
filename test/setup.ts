@@ -22,6 +22,5 @@ class IntersectionObserverStub implements IntersectionObserver {
 }
 
 if (typeof globalThis.IntersectionObserver === "undefined") {
-	globalThis.IntersectionObserver =
-		IntersectionObserverStub
+	globalThis.IntersectionObserver = IntersectionObserverStub
 }

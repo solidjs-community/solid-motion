@@ -16,8 +16,10 @@ declare module "motion-dom" {
 	 While motion-dom supports both camelCase and kebab-case,
 	 but provides only camelCase properties in the types.
 	*/
-	interface CSSStyleDeclarationWithTransform
-		extends Omit<PropertiesHyphen, "direction" | "transition"> {}
+	interface CSSStyleDeclarationWithTransform extends Omit<
+		PropertiesHyphen,
+		"direction" | "transition"
+	> {}
 }
 
 /** A target of style values to animate to/from, with an optional per-target transition override. */
@@ -30,8 +32,7 @@ export type Target = DOMKeyframesDefinition & {transition?: AnimationOptions}
  * on its own frame loop, without going through Solid's reactive graph.
  */
 export type MotionStyle =
-	| string
-	| (Omit<JSX.CSSProperties, keyof MotionStyleShorthands> & MotionStyleShorthands)
+	string | (Omit<JSX.CSSProperties, keyof MotionStyleShorthands> & MotionStyleShorthands)
 
 type MotionStyleShorthands = {
 	[K in Exclude<keyof Target, "transition">]?: Target[K] | MotionValue
