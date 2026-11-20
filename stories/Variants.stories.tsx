@@ -53,7 +53,12 @@ export const Reactive: Story = {
 		return (
 			<div>
 				<button onClick={() => setVariants({on: {opacity: 0.9}})}>Swap variants</button>
-				<Motion.div style={box} variants={variants()} animate="on" transition={{duration: 0.3}} />
+				<Motion.div
+					style={box}
+					variants={variants()}
+					animate="on"
+					transition={{duration: 0.3}}
+				/>
 			</div>
 		)
 	},

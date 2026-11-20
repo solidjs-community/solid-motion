@@ -11,9 +11,7 @@ type Story = StoryObj
 
 /** Free dragging on both axes, with a `dragging` layer while the pointer is down. */
 export const Free: Story = {
-	render: () => (
-		<Motion.div style={box} drag dragging={{opacity: 0.5}} dragMomentum={false} />
-	),
+	render: () => <Motion.div style={box} drag dragging={{opacity: 0.5}} dragMomentum={false} />,
 }
 
 /** Constrained to one axis and a pixel range, with elastic resistance past the bound. */

@@ -16,7 +16,12 @@ export const InView: Story = {
 	render: () => (
 		<div>
 			<div style={spacer}>scroll down</div>
-			<Motion.div style={box} initial={{opacity: 1}} inView={{opacity: 0.2, scale: 1.4}} transition={{duration: 0.4}} />
+			<Motion.div
+				style={box}
+				initial={{opacity: 1}}
+				inView={{opacity: 0.2, scale: 1.4}}
+				transition={{duration: 0.4}}
+			/>
 			<div style={spacer} />
 		</div>
 	),

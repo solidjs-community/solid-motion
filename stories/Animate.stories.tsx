@@ -26,8 +26,18 @@ export const Enter: Story = {
 export const InitialFalse: Story = {
 	render: () => (
 		<div style={row}>
-			<Motion.div style={box} initial={{opacity: 0}} animate={{opacity: 1}} transition={{duration: 1}} />
-			<Motion.div style={box} initial={false} animate={{opacity: 1}} transition={{duration: 1}} />
+			<Motion.div
+				style={box}
+				initial={{opacity: 0}}
+				animate={{opacity: 1}}
+				transition={{duration: 1}}
+			/>
+			<Motion.div
+				style={box}
+				initial={false}
+				animate={{opacity: 1}}
+				transition={{duration: 1}}
+			/>
 		</div>
 	),
 }
