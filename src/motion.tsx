@@ -85,7 +85,7 @@ function motionOptions(props: MotionComponentProps & {style?: MotionStyle}): () 
 		*/
 		const styleValues = splitStyle(props.style).values
 		if (styleValues) options["values"] = {...props.values, ...styleValues}
-		return options as Options
+		return options
 	}
 }
 

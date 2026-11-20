@@ -1,5 +1,4 @@
 import {createContext, type FlowComponent} from "solid-js"
-import type {JSX} from "@solidjs/web"
 
 import {tryUseContext} from "./presence.jsx"
 import type {AnimationOptions, ReducedMotion} from "./types.js"
@@ -53,7 +52,5 @@ export const MotionConfig: FlowComponent<{
 		},
 	}
 
-	return (
-		<MotionConfigContext value={state}>{props.children}</MotionConfigContext>
-	) as JSX.Element
+	return <MotionConfigContext value={state}>{props.children}</MotionConfigContext>
 }

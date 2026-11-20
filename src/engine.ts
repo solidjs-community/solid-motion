@@ -152,12 +152,12 @@ export function createStyles(target: Target, tag = "div"): StartStyles {
 	`buildSVGAttrs`, which splits geometry into `attrs` and leaves the rest
 	(opacity, fill, the `<svg>` root's own transform) in `style`.
 	*/
-	if (SVGElements.has(tag)) buildSVGAttrs(renderState as any, staticValues as any, isSVGTag(tag))
-	else buildHTMLStyles(renderState as any, staticValues as any)
+	if (SVGElements.has(tag)) buildSVGAttrs(renderState, staticValues as any, isSVGTag(tag))
+	else buildHTMLStyles(renderState, staticValues as any)
 
 	return {
 		style: {...(renderState.vars as any), ...(renderState.style as any)},
-		attrs: renderState.attrs as Record<string, string>,
+		attrs: renderState.attrs,
 	}
 }
 
@@ -420,6 +420,8 @@ export function createMotionState(initialOptions: Options, parent?: MotionState)
 				// the media-query listener is only attached when it's actually consulted
 				if (!hasReducedMotionListener.current) initPrefersReducedMotion()
 				return prefersReducedMotion.current ?? false
+			case "never":
+			case undefined:
 			default:
 				return false
 		}
@@ -733,7 +735,7 @@ export function createMotionState(initialOptions: Options, parent?: MotionState)
 					apply: (key, from, transition) => {
 						const value = valueFor(ctx, key)
 						value.set(from)
-						value.start(animateMotionValue(key, value, 0 as never, transition as never))
+						value.start(animateMotionValue(key, value, 0, transition as never))
 					},
 				})
 			}

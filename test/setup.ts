@@ -11,6 +11,7 @@ Playwright suite in `e2e/`, which runs against a real browser.
 class IntersectionObserverStub implements IntersectionObserver {
 	readonly root = null
 	readonly rootMargin = ""
+	readonly scrollMargin = ""
 	readonly thresholds: readonly number[] = []
 	observe(): void {}
 	unobserve(): void {}
@@ -22,5 +23,5 @@ class IntersectionObserverStub implements IntersectionObserver {
 
 if (typeof globalThis.IntersectionObserver === "undefined") {
 	globalThis.IntersectionObserver =
-		IntersectionObserverStub as unknown as typeof IntersectionObserver
+		IntersectionObserverStub
 }

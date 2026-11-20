@@ -11,6 +11,7 @@
 		which conflicts with allowing js files
 		*/
 		"outDir": "dist",
+		"rootDir": ".",
 		"allowJs": true,
 		"checkJs": false,
 		/*
